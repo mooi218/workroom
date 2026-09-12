@@ -72,6 +72,19 @@ const office = new Office({
   viewport: $("#office-viewport"),
   onSelect: selectTask,
 });
+function refreshBadges() {
+  const badges = [
+    { canvas: $(".clock-mascot"), variant: 0 },
+    ...["working", "waiting", "done"].map((status, variant) => ({
+      canvas: $(".pulse-character." + status),
+      variant,
+    })),
+  ];
+  const empty = $(".empty-portrait");
+  if (empty) badges.push({ canvas: empty, variant: 0 });
+  office.setBadges?.(badges);
+}
+refreshBadges();
 const focusView = createFocusView({
   panel: $(".office-panel"),
   viewport: $("#office-viewport"),
@@ -575,8 +588,10 @@ function renderDetails() {
       kicker.textContent = t("atYourDesk");
       const empty = document.createElement("div");
       empty.className = "empty-detail";
-      const icon = document.createElement("span");
-      icon.textContent = "↖";
+      const icon = document.createElement("canvas");
+      icon.className = "empty-portrait";
+      icon.width = 38;
+      icon.height = 44;
       icon.setAttribute("aria-hidden", "true");
       const title = document.createElement("h3");
       title.textContent = t("chooseDesk");
@@ -584,6 +599,7 @@ function renderDetails() {
       p.textContent = t("chooseDeskHelp");
       empty.append(icon, title, p);
       root.append(kicker, empty);
+      refreshBadges();
     }
     return;
   }

@@ -235,9 +235,13 @@ export async function createWorkroom({
       "/roles.mjs": "lib/roles.mjs",
     };
     for (const name of [
-      "studio-banner.png",
-      "worker-atlas.png",
-      "furniture-atlas.png",
+      "people-coarse.png",
+      "people-actions-coarse.png",
+      "furniture-coarse-1.png",
+      "furniture-coarse-2.png",
+      "furniture-coarse-3.png",
+      "furniture-coarse-4.png",
+      "skyline.svg",
       "frame-light.svg",
       "frame-dark.svg",
       "fonts/pixelify-sans.woff2",

@@ -143,7 +143,7 @@
 .clock-mascot {
   width: 55px;
   height: 64px;
-  background: url("./assets/worker-atlas.png") 66.6667% 100%/400% 200% no-repeat;
+  background: none;
   image-rendering: pixelated;
 }
 .clock-greeting {
@@ -175,7 +175,7 @@
   grid-column: 1;
   grid-row: 1;
   margin: 0 !important;
-  background-image: url("./assets/worker-atlas.png");
+  background-image: none;
   background-repeat: no-repeat;
   background-size: 400% 200%;
   image-rendering: pixelated;
@@ -258,8 +258,7 @@
 }
 .empty-detail > span {
   color: transparent !important;
-  background: var(--white) url("./assets/furniture-atlas.png") -2px 0/172px 86px
-    no-repeat;
+  background: var(--white);
   image-rendering: pixelated;
 }
 @media (min-width: 1101px) {
@@ -332,4 +331,18 @@
   .floor-heading > div:first-child {
     flex-basis: 60px;
   }
+}
+
+.clock-mascot,
+.pulse-character {
+  background: none !important;
+  image-rendering: pixelated;
+}
+.empty-portrait {
+  grid-row: span 2;
+  width: 38px;
+  height: 44px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  image-rendering: pixelated;
 }

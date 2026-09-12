@@ -79,6 +79,98 @@ const blendHex = (color, base, amount) => {
   );
 };
 
+// Exact source rectangles from the supplied, unmodified coarse sprite sheets.
+const PEOPLE_RECTS = {
+  seatedFront: [
+    [76, 131, 223, 380],
+    [425, 131, 228, 380],
+    [788, 132, 222, 379],
+    [1147, 132, 222, 378],
+  ],
+  seatedBack: [
+    [76, 576, 212, 380],
+    [438, 575, 212, 380],
+    [791, 575, 215, 380],
+    [1151, 575, 217, 380],
+  ],
+  standFront: [
+    [70, 139, 73, 121],
+    [412, 139, 73, 121],
+    [751, 139, 71, 121],
+    [1085, 139, 72, 121],
+  ],
+  standBack: [
+    [148, 141, 69, 119],
+    [489, 141, 70, 119],
+    [826, 141, 68, 119],
+    [1162, 141, 68, 119],
+  ],
+  walkLeftA: [
+    [70, 295, 68, 115],
+    [407, 295, 71, 115],
+    [748, 295, 68, 115],
+    [1085, 295, 67, 115],
+  ],
+  walkLeftB: [
+    [143, 295, 67, 115],
+    [480, 295, 71, 115],
+    [821, 295, 66, 115],
+    [1157, 295, 68, 115],
+  ],
+  walkRightA: [
+    [222, 295, 67, 115],
+    [563, 295, 68, 115],
+    [902, 295, 68, 115],
+    [1233, 295, 70, 115],
+  ],
+  walkRightB: [
+    [297, 295, 67, 115],
+    [633, 295, 72, 115],
+    [975, 295, 67, 115],
+    [1308, 295, 69, 115],
+  ],
+  coffee: [
+    [66, 629, 74, 124],
+    [409, 627, 78, 126],
+    [757, 627, 74, 126],
+    [1100, 627, 74, 126],
+  ],
+  paper: [
+    [169, 629, 74, 124],
+    [512, 627, 78, 126],
+    [863, 629, 72, 124],
+    [1200, 628, 72, 125],
+  ],
+  laptop: [
+    [270, 627, 81, 126],
+    [614, 627, 81, 126],
+    [963, 629, 81, 124],
+    [1299, 627, 82, 126],
+  ],
+};
+const PROP_RECTS = {
+  meetingSmall: [1, 158, 94, 384, 264],
+  conferenceTable: [1, 774, 70, 564, 316],
+  chairOfficeBack: [1, 302, 626, 96, 112],
+  chairGuestFront: [1, 978, 594, 156, 180],
+  sofaGreenWithSideTable: [2, 70, 70, 420, 284],
+  coffeeTable: [2, 726, 118, 228, 184],
+  ovalTable: [2, 114, 538, 332, 196],
+  sofaWhite: [2, 682, 542, 312, 184],
+  bookshelf: [3, 314, 86, 192, 276],
+  receptionCounter: [3, 894, 70, 684, 308],
+  printer: [3, 310, 558, 204, 224],
+  monitorBack: [3, 1166, 606, 140, 132],
+  plantEmeraldGold: [4, 70, 82, 124, 200],
+  plantTallTerracotta: [4, 342, 74, 116, 216],
+  plantLimeTerracotta: [4, 610, 82, 120, 196],
+  plantBranchedGold: [4, 878, 74, 120, 216],
+  plantEmeraldMauve: [4, 70, 434, 124, 220],
+  plantThinClay: [4, 342, 438, 120, 216],
+  plantLimeGold: [4, 610, 438, 120, 212],
+  plantLimeMauve: [4, 874, 434, 128, 224],
+};
+
 export class Office {
   constructor({ canvas, overlay, world, viewport, onSelect }) {
     this.canvas = canvas;
@@ -102,9 +194,15 @@ export class Office {
     this.departureNumber = [];
     this.assets = Object.create(null);
     this.assetImages = [];
+    this.badges = [];
     this.destroyed = false;
-    this.loadAtlas("workers", "./assets/worker-atlas.png");
-    this.loadAtlas("furniture", "./assets/furniture-atlas.png");
+    this.loadAtlas("people", "./assets/people-coarse.png");
+    this.loadAtlas("actions", "./assets/people-actions-coarse.png");
+    for (let sheet = 1; sheet <= 4; sheet++)
+      this.loadAtlas(
+        `furniture${sheet}`,
+        `./assets/furniture-coarse-${sheet}.png`,
+      );
     // A shared, low-frequency animation clock. Hidden tabs and motion-off consume no drawing work.
     this.timer = setInterval(() => {
       if (this.motion && !document.hidden) {
@@ -168,6 +266,7 @@ export class Office {
           room,
           key,
           seed: hash(key),
+          appearance: hash(task.taskId || task.id) % 4,
         });
       });
     });
@@ -253,9 +352,8 @@ export class Office {
       if (this.destroyed || !image.naturalWidth || !image.naturalHeight) return;
       this.assets[name] = {
         image,
-        cellWidth: image.naturalWidth / 4,
-        cellHeight: image.naturalHeight / 2,
       };
+      if (name === "people") this.renderBadges();
       if (!document.hidden) this.draw();
     };
     image.onerror = () => {
@@ -263,34 +361,76 @@ export class Office {
     };
     image.src = src;
   }
-  sprite(name, frame, x, y, w, h, crop = null) {
-    const atlas = this.assets[name];
+  prop(name, x, y, w, h) {
+    const info = PROP_RECTS[name];
+    if (!info) return false;
+    const [sheet, sx, sy, sw, sh] = info,
+      atlas = this.assets[`furniture${sheet}`];
     if (!atlas) return false;
-    const part = crop || { x: 0, y: 0, w: 1, h: 1 };
+    const scale = Math.min(w / sw, h / sh),
+      dw = Math.round(sw * scale),
+      dh = Math.round(sh * scale);
     this.ctx.drawImage(
       atlas.image,
-      ((frame % 4) + part.x) * atlas.cellWidth,
-      (Math.floor(frame / 4) + part.y) * atlas.cellHeight,
-      part.w * atlas.cellWidth,
-      part.h * atlas.cellHeight,
-      Math.round(x),
-      Math.round(y),
-      w,
-      h,
+      sx,
+      sy,
+      sw,
+      sh,
+      Math.round(x + (w - dw) / 2),
+      Math.round(y + h - dh),
+      dw,
+      dh,
     );
     return true;
   }
-  workerSprite(frame, x, feet, size = 84, flip = false) {
-    if (!this.assets.workers) return false;
-    // Atlas feet share a baseline, except the shorter reclining pose.
-    const foot = [418, 418, 419, 418, 410, 410, 406, 376][frame] / 443.5;
-    const c = this.ctx;
-    c.save();
-    c.translate(Math.round(x), Math.round(feet));
-    if (flip) c.scale(-1, 1);
-    this.sprite("workers", frame, -size / 2, -size * foot, size, size);
-    c.restore();
+  person(pose, variant, x, feet, height = 72, context = this.ctx) {
+    const source = pose.startsWith("seated") ? "people" : "actions",
+      atlas = this.assets[source];
+    const rect = PEOPLE_RECTS[pose]?.[(Number(variant) >>> 0) % 4];
+    if (!atlas || !rect) return false;
+    const [sx, sy, sw, sh] = rect,
+      scale = height / sh,
+      width = Math.round(sw * scale);
+    context.imageSmoothingEnabled = false;
+    context.drawImage(
+      atlas.image,
+      sx,
+      sy,
+      sw,
+      sh,
+      Math.round(x - width / 2),
+      Math.round(feet - (sh - 3) * scale),
+      width,
+      Math.round(height),
+    );
     return true;
+  }
+  setBadges(badges) {
+    this.badges = Array.isArray(badges)
+      ? badges.filter((entry) => entry?.canvas?.getContext)
+      : [];
+    this.renderBadges();
+  }
+  renderBadges() {
+    if (!this.assets.people || this.destroyed) return;
+    for (const { canvas, variant = 0 } of this.badges) {
+      const context = canvas.getContext("2d");
+      if (!context) continue;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      const rect = PEOPLE_RECTS.seatedFront[(Number(variant) >>> 0) % 4];
+      const height = Math.min(
+        canvas.height - 2,
+        ((canvas.width - 2) * rect[3]) / rect[2],
+      );
+      this.person(
+        "seatedFront",
+        variant,
+        canvas.width / 2,
+        canvas.height - 1,
+        height,
+        context,
+      );
+    }
   }
   makeTilePattern(room) {
     const tile = this.canvas.ownerDocument?.createElement("canvas");
@@ -322,19 +462,7 @@ export class Office {
           c.fillRect(x * 24, y * 24 + 23, 24, 1);
         }
     }
-    for (let i = 0; i < (room ? 40 : 34); i++) {
-      const px = (i * 29 + 11) % tile.width,
-        py = (i * 17 + 7) % tile.height;
-      c.fillStyle =
-        i % 2
-          ? this.dark
-            ? "#edf3ff0b"
-            : "#ffffff38"
-          : this.dark
-            ? "#03091310"
-            : "#49647715";
-      c.fillRect(px, py, room ? 2 + (i % 5) : 1 + (i % 2), 1);
-    }
+    // Broad flat tiles match the supplied coarse sprites; no per-pixel grain or dithering.
     return this.ctx.createPattern(tile, "repeat");
   }
   fit() {
@@ -384,6 +512,22 @@ export class Office {
     this.ctx.fillText(str, x, y);
   }
   plant(x, y, scale = 1) {
+    const styles = [
+      "plantEmeraldGold",
+      "plantTallTerracotta",
+      "plantLimeTerracotta",
+      "plantBranchedGold",
+      "plantEmeraldMauve",
+      "plantThinClay",
+      "plantLimeGold",
+      "plantLimeMauve",
+    ];
+    const style =
+      styles[((Math.round(x) * 13 + Math.round(y) * 7) >>> 0) % styles.length];
+    if (
+      this.prop(style, x - 18 * scale, y - 48 * scale, 36 * scale, 66 * scale)
+    )
+      return;
     const c = this.ctx;
     c.save();
     c.translate(x, y);
@@ -472,15 +616,7 @@ export class Office {
     this.rect(x - 3, y + 61, w + 6, 3, "#a1ac9b");
   }
   shelf(x, y, w = 67) {
-    if (
-      this.sprite("furniture", 4, x, y - 4, w, 72, {
-        x: 0.14,
-        y: 0.04,
-        w: 0.73,
-        h: 0.84,
-      })
-    )
-      return;
+    if (this.prop("bookshelf", x, y - 4, w, 72)) return;
     this.rect(x + 4, y + 6, w, 56, "#515f4033");
     this.rect(x, y, w, 55, "#a8956b");
     this.rect(x + 4, y + 3, w - 8, 46, "#686e51");
@@ -591,7 +727,11 @@ export class Office {
     const chairColor = blendHex(role.color, "#426580", 0.4);
     this.plant(x + 22, y + 125, 0.5);
     this.plant(x + 315, y + 132, 0.55);
-    if (this.assets.furniture) {
+    if (
+      this.assets.furniture1 &&
+      this.assets.furniture2 &&
+      this.assets.furniture3
+    ) {
       this.emptyFurniture(room);
       return;
     }
@@ -700,27 +840,24 @@ export class Office {
   emptyFurniture({ x, y, role }) {
     const id = role.id;
     if (id === "engineering" || id === "design") {
-      this.sprite(
-        "furniture",
-        id === "design" ? 1 : 0,
-        x + 84,
-        y + 34,
-        128,
-        128,
-      );
-      this.sprite("furniture", 4, x + 226, y + 45, 100, 100);
+      this.prop("chairOfficeBack", x + 123, y + 70, 37, 43);
+      this.workTable(x + 93, y + 98, 132, 28);
+      this.prop("monitorBack", x + 165, y + 67, 38, 36);
+      this.prop("bookshelf", x + 243, y + 53, 48, 80);
       this.wallBoard(
-        x + 35,
+        x + 34,
         y + 55,
-        44,
-        60,
+        45,
+        59,
         id === "design" ? "design" : "notes",
       );
     } else if (id === "pr") {
-      this.sprite("furniture", 5, x + 43, y + 32, 192, 130);
+      this.prop("chairGuestFront", x + 72, y + 54, 42, 51);
+      this.prop("chairGuestFront", x + 178, y + 54, 42, 51);
+      this.prop("ovalTable", x + 102, y + 98, 103, 46);
       this.wallBoard(x + 257, y + 54, 43, 65, "chart");
     } else if (id === "sales" || id === "planning") {
-      this.sprite("furniture", 6, x + 30, y + 29, 210, 135);
+      this.prop("conferenceTable", x + 48, y + 44, 188, 101);
       this.wallBoard(
         x + 256,
         y + 55,
@@ -729,27 +866,23 @@ export class Office {
         id === "sales" ? "chart" : "notes",
       );
     } else if (id === "writing") {
-      this.sprite("furniture", 4, x + 24, y + 35, 118, 112);
-      this.sprite("furniture", 7, x + 145, y + 58, 159, 107);
-      this.wallBoard(x + 163, y + 49, 51, 43, "writing");
+      this.prop("bookshelf", x + 35, y + 50, 55, 88);
+      this.workTable(x + 125, y + 96, 100, 29);
+      this.prop("chairOfficeBack", x + 153, y + 112, 31, 36);
+      this.rect(x + 155, y + 101, 24, 12, "#f3e6ca");
+      this.rect(x + 158, y + 104, 17, 2, "#91a69f");
+      this.wallBoard(x + 252, y + 52, 43, 64, "writing");
     } else if (id === "research") {
-      this.sprite("furniture", 6, x + 55, y + 48, 167, 108);
-      this.sprite("furniture", 4, x + 226, y + 44, 103, 103);
-      this.wallBoard(x + 35, y + 51, 45, 54, "chart");
-      this.rect(x + 157, y + 87, 21, 13, "#f5ebce");
-      this.rect(x + 158, y + 89, 8, 1, "#768d9e");
-      this.rect(x + 168, y + 89, 8, 1, "#768d9e");
-      this.rect(x + 166, y + 87, 1, 13, "#b4b6a6");
+      this.prop("meetingSmall", x + 60, y + 48, 175, 96);
+      this.prop("bookshelf", x + 255, y + 54, 43, 78);
+      this.wallBoard(x + 32, y + 48, 44, 55, "chart");
     } else if (id === "operations") {
-      this.sprite("furniture", 7, x + 65, y + 42, 207, 126);
-      this.wallBoard(x + 39, y + 53, 38, 50, "notes");
-      this.rect(x + 277, y + 57, 23, 24, "#29495e");
-      this.rect(x + 280, y + 60, 17, 18, "#f1ecd5");
-      this.rect(x + 287, y + 63, 2, 9, "#34586e");
-      this.rect(x + 287, y + 69, 6, 2, "#34586e");
+      this.prop("receptionCounter", x + 58, y + 45, 218, 98);
+      this.wallBoard(x + 39, y + 51, 38, 47, "notes");
     } else {
-      this.sprite("furniture", 2, x + 58, y + 40, 204, 121);
-      this.wallBoard(x + 265, y + 53, 37, 57, "notes");
+      this.prop("sofaWhite", x + 83, y + 53, 141, 75);
+      this.prop("coffeeTable", x + 229, y + 108, 45, 37);
+      this.wallBoard(x + 259, y + 50, 40, 54, "notes");
     }
   }
   woodSign(x, y, w, compact = false) {
@@ -826,8 +959,8 @@ export class Office {
         coffeeW: 78,
         printerX: 319,
         printerW: 44,
-        lounge: { x: 101, y: 140 },
-        coffee: { x: 254, y: 149 },
+        lounge: { x: 101, y: 161 },
+        coffee: { x: 238, y: 153 },
         printer: { x: 342, y: 153 },
       };
     if (this.columns === 2)
@@ -839,8 +972,8 @@ export class Office {
         coffeeW: 105,
         printerX: 632,
         printerW: 54,
-        lounge: { x: 120, y: 139 },
-        coffee: { x: 552, y: 149 },
+        lounge: { x: 120, y: 161 },
+        coffee: { x: 530, y: 153 },
         printer: { x: 659, y: 153 },
       };
     return {
@@ -851,8 +984,8 @@ export class Office {
       coffeeW: 159,
       printerX: 980,
       printerW: 54,
-      lounge: { x: 120, y: 139 },
-      coffee: { x: 854, y: 149 },
+      lounge: { x: 120, y: 161 },
+      coffee: { x: 793, y: 153 },
       printer: { x: 1007, y: 153 },
     };
   }
@@ -860,7 +993,9 @@ export class Office {
     const x = layout.sofaX,
       y = layout.sofaY;
     const scene = this.loungeSpriteRect(layout);
-    if (this.sprite("furniture", 2, scene.x, scene.y, scene.w, scene.h)) {
+    if (
+      this.prop("sofaGreenWithSideTable", scene.x, scene.y, scene.w, scene.h)
+    ) {
       if (layout.table) this.plant(x + 219, y + 45, 0.8);
       return;
     }
@@ -892,9 +1027,9 @@ export class Office {
   loungeSpriteRect(layout = this.lobbyLayout()) {
     return {
       x: layout.sofaX - 10,
-      y: layout.sofaY - 48,
+      y: 88,
       w: layout.table ? 200 : 146,
-      h: 105,
+      h: 88,
     };
   }
   cup(x, y, steam = false) {
@@ -912,6 +1047,36 @@ export class Office {
       y = 94,
       w = layout.coffeeW,
       mx = x + w - 53;
+    const counter = { x: x - 4, y: 72, w: w + 8, h: 79 };
+    if (
+      this.prop("receptionCounter", counter.x, counter.y, counter.w, counter.h)
+    ) {
+      const source = PROP_RECTS.receptionCounter,
+        scale = Math.min(counter.w / source[3], counter.h / source[4]);
+      const surface = counter.y + counter.h - source[4] * scale * 0.585;
+      const machineX = Math.round(x + Math.max(8, w * 0.11)),
+        machineY = Math.round(surface - 24),
+        machineW = Math.min(26, Math.round(w * 0.25));
+      this.rect(machineX, machineY, machineW, 24, "#274653");
+      this.rect(machineX + 2, machineY + 2, machineW - 4, 6, "#acbec1");
+      this.rect(machineX + 5, machineY + 10, machineW - 10, 12, "#172f3c");
+      this.rect(machineX + 8, machineY + 9, 4, 4, "#d6e2d9");
+      this.cup(machineX + 7, machineY + 16, true);
+      const brewing = [...this.visits.values()].some(
+        (visit) =>
+          visit.resource === "coffee" &&
+          this.visitPosition(visit).phase === "staying",
+      );
+      if (brewing)
+        this.rect(
+          machineX + 10,
+          machineY + 12,
+          2,
+          4 + (Math.floor(this.time * 5) % 2),
+          "#b49364",
+        );
+      return;
+    }
     this.rect(x + 4, y + 9, w, 47, "#59614e33");
     this.rect(x + 7, y + 13, w, 42, "#17314722");
     this.rect(x, y, w, 47, "#9b9f8c");
@@ -963,7 +1128,7 @@ export class Office {
     const phase = (this.time + 7) % 19,
       printing = inUse || phase < 3.8,
       feed = printing ? Math.floor((this.time * 8) % 12) : 0;
-    if (this.sprite("furniture", 3, x - w * 0.45, 59, w * 1.9, 100)) {
+    if (this.prop("printer", x, 82, w, 66)) {
       if (printing) {
         this.rect(x + w * 0.32, 113, w * 0.38, 8 + feed * 0.45, "#f6f4e8");
         this.rect(x + w * 0.36, 116, w * 0.29, 1, "#8a9ca8");
@@ -1141,6 +1306,103 @@ export class Office {
     this.rect(x - 6, y + 24, 11, 3, skin);
   }
   seatedPerson(seat) {
+    if (!this.assets.people)
+      return this.seatedFallback({ ...seat, seed: seat.appearance });
+    const { x, y, task, appearance } = seat,
+      cycle = (this.time + (seat.seed % 23)) % 30;
+    const pose =
+      task.status === "working"
+        ? cycle < 18
+          ? "typing"
+          : cycle < 24
+            ? "paper"
+            : "coffee"
+        : ["idle", "done"].includes(task.status) && cycle > 12 && cycle < 22
+          ? "sleep"
+          : cycle < 22
+            ? "paper"
+            : "coffee";
+    const beat = Math.floor(this.time / (0.24 + (seat.seed % 5) * 0.05)) % 2;
+    if (pose === "sleep") {
+      this.sleepPortrait(appearance, x + 63, y + 91, 76);
+      this.sleepMarks(x + 91, y + 32, seat.seed);
+    } else {
+      const frame =
+        pose === "typing" || !this.assets.actions ? "seatedFront" : pose;
+      this.person(
+        frame,
+        appearance,
+        x + 63,
+        y + 91 - (pose === "typing" ? beat : 0),
+        76,
+      );
+    }
+    return pose;
+  }
+  sleepPortrait(variant, x, feet, height = 72) {
+    const atlas = this.assets.people,
+      rect = PEOPLE_RECTS.seatedFront[variant % 4];
+    if (!atlas || !rect) return;
+    const [sx, sy, sw, sh] = rect,
+      scale = height / sh,
+      w = sw * scale,
+      top = feet - (sh - 3) * scale,
+      c = this.ctx;
+    c.drawImage(
+      atlas.image,
+      sx,
+      sy + sh * 0.5,
+      sw,
+      sh * 0.5,
+      Math.round(x - w / 2),
+      Math.round(top + height * 0.5),
+      Math.round(w),
+      Math.round(height * 0.5),
+    );
+    c.save();
+    c.translate(Math.round(x), Math.round(top + height * 0.52));
+    c.rotate(Math.sin(this.time * 0.45 + variant) * 0.04);
+    c.drawImage(
+      atlas.image,
+      sx,
+      sy,
+      sw,
+      sh * 0.52,
+      Math.round(-w / 2),
+      Math.round(-height * 0.52),
+      Math.round(w),
+      Math.round(height * 0.52),
+    );
+    c.restore();
+  }
+  typingHands(seat) {
+    const rect = PEOPLE_RECTS.seatedFront[seat.appearance],
+      atlas = this.assets.people;
+    if (!atlas || !rect) return;
+    const [sx, sy, sw, sh] = rect,
+      height = 76,
+      width = (sw / sh) * height,
+      left = seat.x + 63 - width / 2,
+      top = seat.y + 91 - ((sh - 3) / sh) * height;
+    const beat = Math.floor(this.time / (0.24 + (seat.seed % 5) * 0.05)) % 2;
+    for (const [fraction, lift] of [
+      [0.19, beat * 2],
+      [0.63, (1 - beat) * 2],
+    ]) {
+      this.ctx.drawImage(
+        atlas.image,
+        sx + sw * fraction,
+        sy + sh * 0.65,
+        sw * 0.22,
+        sh * 0.11,
+        Math.round(left + width * fraction),
+        Math.round(top + height * 0.65 - lift),
+        Math.round(width * 0.22),
+        Math.round(height * 0.11),
+      );
+    }
+  }
+  seatedFallback(seat) {
     const { x, y, role, seed, task } = seat,
       skin = SKIN[seed % 4],
       working = task.status === "working";
@@ -1168,38 +1430,7 @@ export class Office {
         ) % 2,
       bob =
         pose === "sleep" ? 3 : Math.floor((this.time + (seed % 5)) * 1.7) % 2;
-    if (this.assets.workers) {
-      const frame =
-        pose === "typing"
-          ? beat
-          : pose === "sip"
-            ? 3
-            : pose === "sleep"
-              ? 7
-              : 2;
-      this.workerSprite(
-        frame,
-        x + 63,
-        y + 106 - (pose === "typing" ? bob : 0),
-        84,
-      );
-      // A small foreground keyboard aligns with the visible hands of the three-quarter pose.
-      if (pose === "typing") {
-        this.rect(x + 76, y + 78 - bob, 27, 8, "#1d374f");
-        this.rect(x + 77, y + 78 - bob, 25, 2, "#b8cdd9");
-        for (let row = 0; row < 2; row++)
-          for (let key = 0; key < 6; key++)
-            this.rect(
-              x + 79 + key * 4,
-              y + 80 + row * 3 - bob,
-              2,
-              1,
-              "#d1e0e8",
-            );
-      }
-      if (pose === "sleep") this.sleepMarks(x + 95, y + 54, seed);
-      return;
-    }
+
     this.rect(x + 49, y + 64, 28, 21, role.color);
     this.rect(x + 47, y + 69, 5, 11, role.color);
     this.rect(x + 75, y + 68, 6, 12, role.color);
@@ -1245,44 +1476,33 @@ export class Office {
     this.text("z", x + 8, y - 9 - float, 12, "#657863", "600");
   }
   standingPerson(visit, position) {
+    if (!this.assets.actions)
+      return this.standingFallback(
+        { ...visit, seat: { ...visit.seat, seed: visit.seat.appearance } },
+        position,
+      );
+    const { x, y, phase, direction, vertical } = position,
+      { seat } = visit;
+    const walking = phase !== "staying",
+      beat = Math.floor(this.time * 4 + (seat.seed % 3)) % 2;
+    let pose;
+    if (phase !== "outbound" && visit.resource === "printer") pose = "paper";
+    else if (phase !== "outbound" && visit.resource === "coffee")
+      pose = "coffee";
+    else if (direction)
+      pose = "walk" + (direction < 0 ? "Left" : "Right") + (beat ? "B" : "A");
+    else pose = vertical < 0 ? "standBack" : "standFront";
+    this.rect(x - 11, y + 1, 23, 3, "#253a452b");
+    this.person(pose, seat.appearance, x, y - (walking ? beat : 0), 58);
+  }
+  standingFallback(visit, position) {
     const { x, y, phase, direction } = position,
       { seat } = visit,
       skin = SKIN[seat.seed % 4],
       walking = phase !== "staying",
       beat = Math.floor((this.time + (seat.seed % 3)) * 5) % 2,
       bob = walking ? beat : 0;
-    if (this.assets.workers) {
-      const size = walking ? 62 : 68,
-        flip = direction < 0;
-      this.rect(x - 14, y + 1, 30, 4, "#19314933");
-      if (!walking && visit.resource === "coffee") {
-        const top = y - size * 0.94;
-        this.sprite(
-          "workers",
-          4,
-          x - size / 2,
-          top + size * 0.71,
-          size,
-          size * 0.29,
-          { x: 0, y: 0.71, w: 1, h: 0.29 },
-        );
-        this.sprite("workers", 3, x - size / 2, top, size, size * 0.73, {
-          x: 0,
-          y: 0,
-          w: 1,
-          h: 0.73,
-        });
-      } else {
-        const frame =
-          visit.resource === "printer" && phase !== "outbound" ? 6 : 4 + beat;
-        this.workerSprite(frame, x, y - bob, size, flip);
-        if (visit.resource === "coffee" && phase === "returning")
-          this.cup(x + (flip ? -16 : 13), y - 23, true);
-      }
-      this.rect(x - 5, y - 26, 7, 5, "#102d44");
-      this.rect(x - 4, y - 25, 5, 3, seat.role.color);
-      return;
-    }
+
     const c = this.ctx;
     c.save();
     c.translate(Math.round(x), Math.round(y));
@@ -1327,27 +1547,50 @@ export class Office {
     c.restore();
   }
   restingPerson(visit, position) {
+    if (!this.assets.people)
+      return this.restingFallback(
+        { ...visit, seat: { ...visit.seat, seed: visit.seat.appearance } },
+        position,
+      );
+    const { x, y } = position,
+      { seat } = visit;
+    // Only the upper body appears above the sofa; the source's office chair stays hidden.
+    this.ctx.save();
+    this.ctx.beginPath();
+    this.ctx.rect(x - 38, y - 68, 76, 49);
+    this.ctx.clip();
+    if (visit.kind === "nap") this.sleepPortrait(seat.appearance, x, y + 4, 64);
+    else this.person("seatedFront", seat.appearance, x, y + 4, 64);
+    this.ctx.restore();
+    this.sofaForeground();
+    if (visit.kind === "nap") this.sleepMarks(x + 28, y - 32, seat.seed);
+  }
+  sofaForeground() {
+    const info = PROP_RECTS.sofaGreenWithSideTable,
+      atlas = this.assets.furniture2;
+    if (!atlas) return;
+    const [, sx, sy, sw, sh] = info,
+      scene = this.loungeSpriteRect(),
+      scale = Math.min(scene.w / sw, scene.h / sh),
+      w = sw * scale,
+      h = sh * scale;
+    this.ctx.drawImage(
+      atlas.image,
+      sx,
+      sy + sh * 0.62,
+      sw,
+      sh * 0.38,
+      Math.round(scene.x + (scene.w - w) / 2),
+      Math.round(scene.y + scene.h - h + h * 0.62),
+      Math.round(w),
+      Math.round(h * 0.38),
+    );
+  }
+  restingFallback(visit, position) {
     const { x, y } = position,
       { seat } = visit,
       skin = SKIN[seat.seed % 4];
-    if (this.assets.workers) {
-      const nap = visit.kind === "nap";
-      this.workerSprite(nap ? 7 : 3, x, y + (nap ? -1 : 7), nap ? 105 : 79);
-      if (this.assets.furniture) {
-        const scene = this.loungeSpriteRect();
-        this.sprite(
-          "furniture",
-          2,
-          scene.x,
-          scene.y + scene.h * 0.6,
-          scene.w,
-          scene.h * 0.4,
-          { x: 0, y: 0.6, w: 1, h: 0.4 },
-        );
-      }
-      if (nap) this.sleepMarks(x + 48, y - 38, seat.seed);
-      return;
-    }
+
     if (visit.kind === "nap") {
       this.rect(x - 37, y - 22, 30, 13, "#526356");
       this.rect(x - 38, y - 19, 7, 9, "#3d5347");
@@ -1369,38 +1612,32 @@ export class Office {
     }
   }
   desk(seat) {
-    if (!this.assets.furniture) return this.deskFallback(seat);
+    if (!this.assets.people) return this.deskFallback(seat);
     const { x, y, task, role } = seat,
-      frame = role.id === "design" ? 1 : 0;
-    const dx = x - 4,
-      dy = y - 22,
-      size = 142;
-    this.sprite("furniture", frame, dx, dy, size, size);
-    if (!this.visits.has(seat.key)) {
-      this.seatedPerson(seat);
-      // The lower chair is in front of the knees. It is furniture, never a second character.
-      if (this.assets.workers)
-        this.sprite(
-          "furniture",
-          frame,
-          dx + size * 0.23,
-          dy + size * 0.78,
-          size * 0.5,
-          size * 0.2,
-          { x: 0.23, y: 0.78, w: 0.5, h: 0.2 },
-        );
-    }
-    this.rect(x + 108, y + 79, 16, 8, "#173247");
-    this.rect(x + 110, y + 81, 12, 4, role.color);
+      away = this.visits.has(seat.key);
+    this.rect(x + 13, y + 94, 115, 7, "#253a4526");
+    this.rect(x + 17, y + 82, 6, 24, "#667165");
+    this.rect(x + 112, y + 82, 6, 24, "#667165");
+    let pose;
+    if (!away) pose = this.seatedPerson(seat);
+    else if (!this.prop("chairOfficeBack", x + 43, y + 47, 39, 46))
+      this.emptyChair(x + 63, y + 70, "#527b94");
+    this.rect(x + 7, y + 65, 119, 27, "#8e724c");
+    this.rect(x + 7, y + 61, 119, 24, "#d6b47e");
+    this.rect(x + 9, y + 61, 115, 3, "#ecd5a2");
+    this.rect(x + 10, y + 83, 112, 4, "#b99762");
+    this.rect(x + 16, y + 72, 18, 2, "#c29e69");
+    this.rect(x + 45, y + 70, 40, 10, "#405566");
+    for (let row = 0; row < 2; row++)
+      for (let key = 0; key < 7; key++)
+        this.rect(x + 48 + key * 5, y + 72 + row * 4, 3, 2, "#aabdc5");
+    if (!this.prop("monitorBack", x + 91, y + 29, 35, 36))
+      this.smallMonitor(x + 91, y + 31, 34);
+    if (pose === "typing") this.typingHands(seat);
+    this.cup(x + 18, y + 64);
+    this.rect(x + 106, y + 88, 14, 7, "#183348");
+    this.rect(x + 108, y + 90, 10, 3, role.color);
     this.statusBadge(seat);
-    if (task.status === "working")
-      this.rect(
-        x + 84 + (Math.floor(this.time * 2) % 3) * 3,
-        y + 16,
-        2,
-        2,
-        "#f2e4b6",
-      );
   }
   statusBadge({ x, y, task }) {
     const color = STATUS_COLORS[task.status] || STATUS_COLORS.unknown;
@@ -1703,6 +1940,7 @@ export class Office {
       image.onerror = null;
     }
     this.assetImages = [];
+    this.badges = [];
     this.assets = Object.create(null);
     this.floorPattern = null;
     this.roomPattern = null;

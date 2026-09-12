@@ -111,7 +111,12 @@
             <time id="clock-date" class="clock-date"></time
             ><time id="clock-time" class="clock-time"></time>
           </div>
-          <div class="clock-mascot" aria-hidden="true"></div>
+          <canvas
+            class="clock-mascot"
+            width="64"
+            height="64"
+            aria-hidden="true"
+          ></canvas>
           <span id="clock-greeting" class="clock-greeting"></span>
         </div>
       </div>
@@ -177,15 +182,30 @@
             <h2>いま、ここで</h2>
             <div class="stats">
               <button data-filter="working">
-                <span class="pulse-character working" aria-hidden="true"></span>
+                <canvas
+                  class="pulse-character working"
+                  width="36"
+                  height="44"
+                  aria-hidden="true"
+                ></canvas>
                 <b id="working-count">0</b
                 ><span><i class="working"></i>作業中</span></button
               ><button data-filter="waiting">
-                <span class="pulse-character waiting" aria-hidden="true"></span>
+                <canvas
+                  class="pulse-character waiting"
+                  width="36"
+                  height="44"
+                  aria-hidden="true"
+                ></canvas>
                 <b id="waiting-count">0</b
                 ><span><i class="waiting"></i>確認待ち</span></button
               ><button data-filter="done">
-                <span class="pulse-character done" aria-hidden="true"></span>
+                <canvas
+                  class="pulse-character done"
+                  width="36"
+                  height="44"
+                  aria-hidden="true"
+                ></canvas>
                 <b id="done-count">0</b><span><i class="done"></i>完了</span>
               </button>
             </div>
@@ -200,7 +220,12 @@
           <section id="task-details" class="detail-panel">
             <div class="section-kicker">AT YOUR DESK</div>
             <div class="empty-detail">
-              <span aria-hidden="true">↖</span>
+              <canvas
+                class="empty-portrait"
+                width="38"
+                height="44"
+                aria-hidden="true"
+              ></canvas>
               <h3>席を選んでみよう</h3>
               <p>担当している仕事と<br />現在の状態が見られます。</p>
             </div>
