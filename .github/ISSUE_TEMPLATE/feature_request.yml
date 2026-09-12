@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest a change that would make the office more useful.
+title: "[Idea] "
+body:
+  - type: markdown
+    attributes:
+      value: Use fictional examples. Please leave out private task names, logs, account information, and pairing codes.
+  - type: textarea
+    id: need
+    attributes:
+      label: What are you trying to do or understand?
+      description: Describe the situation where Workroom could help more.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What change would help?
+      description: Describe the behavior you would like, with a small example if useful.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you have tried
+      description: Optional. Include any existing control or workaround that almost meets your need.
+    validations:
+      required: false

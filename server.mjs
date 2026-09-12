@@ -7,6 +7,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import { demoSnapshot } from "./lib/demo.mjs";
 import { DEFAULT_ROLES } from "./lib/roles.mjs";
 import { CloudStore } from "./lib/cloud-store.mjs";
+import { spawn } from "node:child_process";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const mime = {
@@ -15,6 +16,8 @@ const mime = {
   ".mjs": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".woff2": "font/woff2",
 };
 export async function createWorkroom({
   port = 4318,
@@ -220,14 +223,28 @@ export async function createWorkroom({
       "/index.html": "public/index.html",
       "/app.js": "public/app.js",
       "/office.js": "public/office.js",
+      "/projects.js": "public/projects.js",
+      "/delivery.js": "public/delivery.js",
+      "/focus.js": "public/focus.js",
+      "/studio.css": "public/studio.css",
+      "/delivery.css": "public/delivery.css",
       "/i18n.js": "public/i18n.js",
       "/style.css": "public/style.css",
       "/favicon.svg": "public/favicon.svg",
       "/roles.mjs": "lib/roles.mjs",
     };
+    for (const name of [
+      "studio-banner.png",
+      "fonts/pixelify-sans.woff2",
+      "fonts/ibm-plex-sans.woff2",
+      "fonts/noto-sans-jp.woff2",
+    ])
+      assets[`/assets/${name}`] = `public/assets/${name}`;
     if (!assets[url.pathname]) return send(res, 404, { error: "Not found" });
     try {
       const data = await readFile(path.join(ROOT, assets[url.pathname]));
+      if ([".woff2", ".png"].includes(path.extname(assets[url.pathname])))
+        res.setHeader("Cache-Control", "public, max-age=86400");
       res.writeHead(200, {
         "Content-Type": mime[path.extname(assets[url.pathname])],
       });
@@ -277,9 +294,28 @@ if (
     ),
     demo: args.includes("--demo"),
   });
-  console.log(
-    `Workroom: http://127.0.0.1:${app.port}\nLocal-only. No model calls. Press Ctrl+C to stop.`,
-  );
+  console.log(`Workroom: http://127.0.0.1:${app.port}\nPress Ctrl+C to stop.`);
+  if (args.includes("--open")) {
+    const address = `http://127.0.0.1:${app.port}`;
+    const command =
+      process.platform === "win32"
+        ? "cmd.exe"
+        : process.platform === "darwin"
+          ? "open"
+          : "xdg-open";
+    const commandArgs =
+      process.platform === "win32"
+        ? ["/d", "/c", "start", "", address]
+        : [address];
+    const browserProcess = spawn(command, commandArgs, {
+      windowsHide: true,
+      stdio: "ignore",
+    });
+    browserProcess.on("error", () =>
+      console.log(`Open ${address} in your browser.`),
+    );
+    browserProcess.unref();
+  }
   for (const signal of ["SIGINT", "SIGTERM"])
     process.on(signal, async () => {
       await app.close();

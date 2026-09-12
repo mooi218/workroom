@@ -98,6 +98,163 @@ function item(hd, threadId, turnId, ordinal, value, at = Date.now() - 1000) {
   });
 }
 
+test("task groups use the latest root title, count root work, and keep same-basename folders separate", async (t) => {
+  const { db, source } = await fixture(t);
+  const now = Date.now();
+  const location = "/PRIVATE_MACHINE/one/c";
+  insert(db, "threads", {
+    id: "older",
+    name: "Prepare launch artwork",
+    cwd: location,
+    updated_at_ms: now - 5000,
+  });
+  insert(db, "threads", {
+    id: "newer",
+    name: "Contact prospective customers",
+    cwd: location,
+    updated_at_ms: now - 1000,
+  });
+  insert(db, "threads", {
+    id: "child",
+    title: "Produce a cover",
+    cwd: location,
+    updated_at_ms: now,
+    source: JSON.stringify({
+      subagent: {
+        thread_spawn: { parent_thread_id: "older", agent_nickname: "Ada" },
+      },
+    }),
+  });
+  insert(db, "threads", {
+    id: "different",
+    name: "Review a separate launch",
+    cwd: "/PRIVATE_MACHINE/two/c",
+    updated_at_ms: now,
+  });
+  const first = await source.snapshot();
+  const byId = new Map(first.tasks.map((task) => [task.id, task]));
+  for (const id of ["older", "newer", "child"]) {
+    const task = byId.get(id);
+    assert.equal(task.projectName, "Contact prospective customers");
+    assert.equal(task.project, task.projectName);
+    assert.equal(task.projectKind, "task-group");
+    assert.equal(task.projectTaskCount, 2);
+    assert.equal(task.projectMemberCount, 3);
+    assert.equal(task.projectKey, byId.get("older").projectKey);
+    assert.match(task.projectKey, /^task-group:[a-f0-9]{24}$/);
+  }
+  assert.notEqual(
+    byId.get("different").projectKey,
+    byId.get("older").projectKey,
+  );
+  assert.equal(byId.get("different").projectName, "Review a separate launch");
+  assert.equal(JSON.stringify(first).includes("PRIVATE_MACHINE"), false);
+  db.prepare("UPDATE threads SET name=? WHERE id='newer'").run(
+    "Follow up with prospective customers",
+  );
+  const renamed = (await source.snapshot()).tasks.find(
+    (task) => task.id === "newer",
+  );
+  assert.equal(renamed.projectKey, byId.get("newer").projectKey);
+  assert.equal(renamed.projectName, "Follow up with prospective customers");
+});
+
+test("saved project identity takes precedence and exact registered roots support older task metadata", async (t) => {
+  const { db, source } = await fixture(t);
+  db.exec("CREATE TABLE project_roots(project_id TEXT, path TEXT)");
+  insert(db, "projects", { id: "saved", name: "Customer launch" });
+  insert(db, "project_roots", {
+    project_id: "saved",
+    path: "C:\\PRIVATE_MACHINE\\Launch",
+  });
+  insert(db, "threads", {
+    id: "explicit",
+    name: "An individual task",
+    project_id: "saved",
+    cwd: "C:\\PRIVATE_MACHINE\\Launch",
+  });
+  insert(db, "threads", {
+    id: "registered-root",
+    name: "Another individual task",
+    cwd: "c:/private_machine/launch/",
+  });
+  insert(db, "threads", {
+    id: "child",
+    title: "A child task",
+    source: JSON.stringify({
+      subagent: { thread_spawn: { parent_thread_id: "explicit" } },
+    }),
+  });
+  const first = await source.snapshot();
+  assert.equal(first.tasks.length, 3);
+  for (const task of first.tasks) {
+    assert.equal(task.project, "Customer launch");
+    assert.equal(task.projectName, "Customer launch");
+    assert.equal(task.projectKind, "project");
+    assert.equal(task.projectKey, first.tasks[0].projectKey);
+    assert.equal(task.projectTaskCount, 2);
+    assert.equal(task.projectMemberCount, 3);
+    assert.match(task.projectKey, /^project:[a-f0-9]{24}$/);
+  }
+  assert.equal(JSON.stringify(first).includes("PRIVATE_MACHINE"), false);
+  db.prepare("UPDATE projects SET name=? WHERE id='saved'").run(
+    "Renamed customer launch",
+  );
+  const renamed = await source.snapshot();
+  assert.equal(renamed.tasks[0].projectKey, first.tasks[0].projectKey);
+  assert.equal(renamed.tasks[0].projectName, "Renamed customer launch");
+});
+
+test("unknown or ambiguous saved project links remain task groups, and absent locations do not merge unrelated work", async (t) => {
+  const { db, source } = await fixture(t);
+  db.exec("CREATE TABLE project_roots(project_id TEXT, path TEXT)");
+  insert(db, "projects", { id: "first", name: "First saved project" });
+  insert(db, "projects", { id: "second", name: "Second saved project" });
+  insert(db, "projects", { id: null, name: "Unlinked saved metadata" });
+  insert(db, "project_roots", { project_id: "first", path: "/ambiguous/c" });
+  insert(db, "project_roots", { project_id: "second", path: "/ambiguous/c" });
+  insert(db, "threads", {
+    id: "ambiguous",
+    name: "Check the proposal",
+    cwd: "/ambiguous/c",
+  });
+  insert(db, "threads", {
+    id: "missing-link",
+    name: "Prepare the demonstration",
+    cwd: "/unregistered/ag",
+    project_id: "unknown",
+  });
+  insert(db, "threads", { id: "no-location-a", name: "Review the draft" });
+  insert(db, "threads", { id: "no-location-b", name: "Plan a meeting" });
+  insert(db, "threads", {
+    id: "no-location-child",
+    title: "Child review",
+    source: JSON.stringify({
+      subagent: { thread_spawn: { parent_thread_id: "no-location-a" } },
+    }),
+  });
+  const { tasks } = await source.snapshot();
+  const byId = new Map(tasks.map((task) => [task.id, task]));
+  assert.equal(
+    tasks.every((task) => task.projectKind === "task-group"),
+    true,
+  );
+  assert.equal(byId.get("ambiguous").projectName, "Check the proposal");
+  assert.equal(
+    byId.get("missing-link").projectName,
+    "Prepare the demonstration",
+  );
+  assert.notEqual(
+    byId.get("no-location-a").projectKey,
+    byId.get("no-location-b").projectKey,
+  );
+  assert.equal(
+    byId.get("no-location-a").projectKey,
+    byId.get("no-location-child").projectKey,
+  );
+  assert.equal(byId.get("no-location-child").projectName, "Review the draft");
+});
+
 test("reads current turns across projects, excludes archived/internal reviewers, exposes metadata only", async (t) => {
   const { root, db, hd, source } = await fixture(t);
   const now = Date.now();
@@ -172,7 +329,9 @@ test("reads current turns across projects, excludes archived/internal reviewers,
   assert.equal(byId.get("design").project, "Launch");
   assert.equal(byId.get("design").roleHint, "designer");
   assert.equal(byId.get("sales").status, "done");
-  assert.equal(byId.get("sales").project, "SecondProject");
+  assert.equal(byId.get("sales").project, byId.get("sales").projectName);
+  assert.equal(byId.get("sales").projectKind, "task-group");
+  assert.equal(byId.get("sales").projectTaskCount, 3);
   assert.equal(byId.get("review").status, "error");
   assert.equal(byId.get("paused").status, "idle");
   assert.equal(byId.get("subagent").status, "unknown");

@@ -1,0 +1,56 @@
+name: Bug report
+description: Report something that did not work as expected in Workroom.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please use invented task names or the demo when describing the issue.
+        Do not attach private logs, conversation records, Codex databases, pairing codes, or screenshots of real tasks.
+  - type: input
+    id: version
+    attributes:
+      label: Workroom version
+      placeholder: "For example: v0.2.0, or a commit ID"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node.js version, and browser. Add the Codex version if relevant.
+      placeholder: "For example: Windows 11, Node.js 24, Chrome"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Starting Workroom
+        - Local Codex task states
+        - ChatGPT Work observer (experimental)
+        - Office layout or animation
+        - Sound or settings
+        - Language or accessibility
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened, and what did you expect?
+      description: Summarize the behavior or error in your own words.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: A small example using demo or invented tasks is ideal. For observer issues, include the page language and the visible status control.
+      placeholder: |
+        1. Start Workroom in demo mode.
+        2. ...
+        3. ...
+    validations:
+      required: true

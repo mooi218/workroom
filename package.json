@@ -1,17 +1,18 @@
 {
   "name": "workroom-office",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "A local pixel office for Codex and observed ChatGPT Work tasks. No model calls.",
+  "description": "A living pixel studio for Codex work, with live roles and an optional ChatGPT Work observer.",
   "type": "module",
   "engines": {
     "node": ">=24.0.0"
   },
   "scripts": {
-    "start": "node server.mjs",
+    "start": "node server.mjs --open",
     "demo": "node server.mjs --demo",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check server.mjs && node --check public/app.js && node --check public/office.js"
+    "check": "node --check server.mjs && node --check public/app.js && node --check public/office.js",
+    "build:demo": "node scripts/build-demo.mjs"
   },
   "license": "MIT"
 }

@@ -7,5 +7,5 @@ if errorlevel 1 (
   exit /b 1
 )
 echo Open http://127.0.0.1:4318 in your browser after Workroom starts.
-node server.mjs
+node server.mjs --open
 pause

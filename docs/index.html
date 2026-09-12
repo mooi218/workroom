@@ -1,21 +1,18 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en" data-mode="demo">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Workroom — 仕事が見える、小さなオフィス</title>
-    <meta
-      name="description"
-      content="CodexとChatGPT Workの仕事を、役割ごとのオフィスで見渡すローカルアプリ。"
-    />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/style.css" />
-    <link rel="stylesheet" href="/studio.css" />
-    <link rel="stylesheet" href="/delivery.css" />
-  </head>
+    <title>Workroom — A living pixel studio for your work</title>
+    <meta name="description" content="Turn Codex work into a living pixel studio. Explore roles, speech bubbles, a completion tray and optional office life in this interactive demo.">
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./studio.css" />
+    <link rel="stylesheet" href="./delivery.css" />
+  <link rel="canonical" href="https://mooi218.github.io/workroom/"><meta property="og:title" content="Workroom — A living pixel studio"><meta property="og:type" content="website"><meta property="og:description" content="See your work in motion. Try the interactive office demo, then connect your own Codex tasks locally."></head>
   <body>
     <header class="app-header">
-      <a class="brand" href="/" aria-label="Workroom ホーム"
+      <a class="brand" href="./" aria-label="Workroom ホーム"
         ><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
           <path
             fill="currentColor"
@@ -345,6 +342,6 @@
       </form>
     </dialog>
     <div id="toast" role="status" hidden></div>
-    <script type="module" src="/app.js"></script>
+    <script type="module" src="./app.js"></script>
   </body>
 </html>

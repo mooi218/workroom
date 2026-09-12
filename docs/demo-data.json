@@ -1,0 +1,484 @@
+{
+  "tasks": [
+    {
+      "id": "demo-0",
+      "title": "Build the customer portal",
+      "project": "Atlas",
+      "roleHint": "engineering",
+      "status": "working",
+      "activeRoles": [
+        {
+          "roleId": "engineering",
+          "evidence": "Demo activity"
+        },
+        {
+          "roleId": "design",
+          "evidence": "Demo activity"
+        }
+      ],
+      "source": "work",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Atlas",
+      "projectKind": "project",
+      "projectName": "Atlas"
+    },
+    {
+      "id": "demo-1",
+      "title": "Fix the sign-in screen",
+      "project": "Atlas",
+      "roleHint": "engineering",
+      "status": "working",
+      "activeRoles": [
+        {
+          "roleId": "engineering",
+          "evidence": "Demo activity"
+        }
+      ],
+      "source": "codex",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Atlas",
+      "projectKind": "project",
+      "projectName": "Atlas"
+    },
+    {
+      "id": "demo-2",
+      "title": "Review the release tests",
+      "project": "Atlas",
+      "roleHint": "engineering",
+      "status": "waiting",
+      "activeRoles": [],
+      "source": "codex",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Atlas",
+      "projectKind": "project",
+      "projectName": "Atlas"
+    },
+    {
+      "id": "demo-3",
+      "title": "Create the campaign visuals",
+      "project": "Bloom",
+      "roleHint": "design",
+      "status": "working",
+      "activeRoles": [
+        {
+          "roleId": "design",
+          "evidence": "Demo activity"
+        }
+      ],
+      "source": "work",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Bloom",
+      "projectKind": "project",
+      "projectName": "Bloom"
+    },
+    {
+      "id": "demo-4",
+      "title": "Explore a new logo",
+      "project": "Bloom",
+      "roleHint": "design",
+      "status": "done",
+      "activeRoles": [],
+      "source": "codex",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Bloom",
+      "projectKind": "project",
+      "projectName": "Bloom"
+    },
+    {
+      "id": "demo-5",
+      "title": "Prepare the launch announcement",
+      "project": "Bloom",
+      "roleHint": "pr",
+      "status": "working",
+      "activeRoles": [
+        {
+          "roleId": "pr",
+          "evidence": "Demo activity"
+        },
+        {
+          "roleId": "writing",
+          "evidence": "Demo activity"
+        }
+      ],
+      "source": "codex",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Bloom",
+      "projectKind": "project",
+      "projectName": "Bloom"
+    },
+    {
+      "id": "demo-6",
+      "title": "Review the social posts",
+      "project": "Bloom",
+      "roleHint": "pr",
+      "status": "waiting",
+      "activeRoles": [],
+      "source": "work",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Bloom",
+      "projectKind": "project",
+      "projectName": "Bloom"
+    },
+    {
+      "id": "demo-7",
+      "title": "Put together the customer proposal",
+      "project": "Orbit",
+      "roleHint": "sales",
+      "status": "working",
+      "activeRoles": [
+        {
+          "roleId": "sales",
+          "evidence": "Demo activity"
+        },
+        {
+          "roleId": "design",
+          "evidence": "Demo activity"
+        }
+      ],
+      "source": "codex",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Orbit",
+      "projectKind": "project",
+      "projectName": "Orbit"
+    },
+    {
+      "id": "demo-8",
+      "title": "Prepare a project estimate",
+      "project": "Orbit",
+      "roleHint": "sales",
+      "status": "idle",
+      "activeRoles": [],
+      "source": "codex",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Orbit",
+      "projectKind": "project",
+      "projectName": "Orbit"
+    },
+    {
+      "id": "demo-9",
+      "title": "Write next week’s article",
+      "project": "Journal",
+      "roleHint": "writing",
+      "status": "working",
+      "activeRoles": [
+        {
+          "roleId": "writing",
+          "evidence": "Demo activity"
+        }
+      ],
+      "source": "work",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Journal",
+      "projectKind": "project",
+      "projectName": "Journal"
+    },
+    {
+      "id": "demo-10",
+      "title": "Proofread the newsletter",
+      "project": "Journal",
+      "roleHint": "writing",
+      "status": "done",
+      "activeRoles": [],
+      "source": "codex",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Journal",
+      "projectKind": "project",
+      "projectName": "Journal"
+    },
+    {
+      "id": "demo-11",
+      "title": "Research the market",
+      "project": "Orbit",
+      "roleHint": "research",
+      "status": "working",
+      "activeRoles": [
+        {
+          "roleId": "research",
+          "evidence": "Demo activity"
+        }
+      ],
+      "source": "codex",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Orbit",
+      "projectKind": "project",
+      "projectName": "Orbit"
+    },
+    {
+      "id": "demo-12",
+      "title": "Review customer interviews",
+      "project": "Atlas",
+      "roleHint": "research",
+      "status": "waiting",
+      "activeRoles": [],
+      "source": "work",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Atlas",
+      "projectKind": "project",
+      "projectName": "Atlas"
+    },
+    {
+      "id": "demo-13",
+      "title": "Plan the next quarter",
+      "project": "Atlas",
+      "roleHint": "planning",
+      "status": "working",
+      "activeRoles": [
+        {
+          "roleId": "planning",
+          "evidence": "Demo activity"
+        }
+      ],
+      "source": "codex",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Atlas",
+      "projectKind": "project",
+      "projectName": "Atlas"
+    },
+    {
+      "id": "demo-14",
+      "title": "Organize the team schedule",
+      "project": "Orbit",
+      "roleHint": "operations",
+      "status": "done",
+      "activeRoles": [],
+      "source": "codex",
+      "updatedAt": "2026-01-01T12:00:00.000Z",
+      "observedAt": "2026-01-01T12:00:00.000Z",
+      "summary": "Fictional demonstration task.",
+      "projectKey": "demo:Orbit",
+      "projectKind": "project",
+      "projectName": "Orbit"
+    }
+  ],
+  "health": {
+    "status": "demo",
+    "message": "サンプルデータ"
+  },
+  "roles": [
+    {
+      "id": "engineering",
+      "name": "エンジニア",
+      "en": "Engineering",
+      "color": "#5d80aa",
+      "keywords": [
+        "実装",
+        "バグ",
+        "修正",
+        "コード",
+        "開発",
+        "エラー",
+        "テスト",
+        "エンジニア",
+        "構築",
+        "監査",
+        "デプロイ",
+        "バックエンド",
+        "api",
+        "github",
+        "deploy",
+        "code",
+        "bug",
+        "engineer",
+        "engineering",
+        "refactor",
+        "implementation",
+        "backend",
+        "frontend",
+        "security",
+        "integration",
+        "qa",
+        "test",
+        "tests",
+        "review"
+      ]
+    },
+    {
+      "id": "design",
+      "name": "デザイン",
+      "en": "Design",
+      "color": "#b57c9a",
+      "keywords": [
+        "デザイン",
+        "画像",
+        "イラスト",
+        "ロゴ",
+        "レイアウト",
+        "スライド",
+        "配色",
+        "可視化",
+        "design",
+        "illustration",
+        "figma",
+        "ui",
+        "ux",
+        "visual",
+        "visualization",
+        "assets",
+        "render"
+      ]
+    },
+    {
+      "id": "pr",
+      "name": "広報",
+      "en": "Public relations",
+      "color": "#bc7e50",
+      "keywords": [
+        "広報",
+        "プレス",
+        "告知",
+        "sns",
+        "x投稿",
+        "発信",
+        "ブランド",
+        "press",
+        "public relations",
+        "announcement",
+        "social"
+      ]
+    },
+    {
+      "id": "sales",
+      "name": "営業",
+      "en": "Sales",
+      "color": "#b38c43",
+      "keywords": [
+        "営業",
+        "商談",
+        "顧客",
+        "見積",
+        "提案書",
+        "見込み客",
+        "sales",
+        "customer",
+        "lead",
+        "proposal",
+        "crm"
+      ]
+    },
+    {
+      "id": "writing",
+      "name": "編集・執筆",
+      "en": "Editorial",
+      "color": "#8a83b5",
+      "keywords": [
+        "ブログ",
+        "記事",
+        "執筆",
+        "文章",
+        "校正",
+        "翻訳",
+        "ニュースレター",
+        "原稿",
+        "編集部",
+        "blog",
+        "article",
+        "write",
+        "writing",
+        "newsletter",
+        "copywriting",
+        "editorial",
+        "content",
+        "docs"
+      ]
+    },
+    {
+      "id": "research",
+      "name": "リサーチ",
+      "en": "Research",
+      "color": "#639b92",
+      "keywords": [
+        "調査",
+        "比較",
+        "分析",
+        "論文",
+        "リサーチ",
+        "検証",
+        "調べ",
+        "research",
+        "analysis",
+        "analyze",
+        "compare",
+        "investigate",
+        "audit",
+        "evidence"
+      ]
+    },
+    {
+      "id": "planning",
+      "name": "企画",
+      "en": "Planning",
+      "color": "#839563",
+      "keywords": [
+        "企画",
+        "戦略",
+        "計画",
+        "ロードマップ",
+        "要件",
+        "planning",
+        "strategy",
+        "roadmap",
+        "requirements"
+      ]
+    },
+    {
+      "id": "operations",
+      "name": "運営・事務",
+      "en": "Operations",
+      "color": "#8b8d92",
+      "keywords": [
+        "管理",
+        "整理",
+        "設定",
+        "経理",
+        "スケジュール",
+        "運営",
+        "事務",
+        "会議",
+        "operations",
+        "organize",
+        "schedule",
+        "admin"
+      ]
+    },
+    {
+      "id": "other",
+      "name": "フリースペース",
+      "en": "Flex space",
+      "color": "#899a9d",
+      "keywords": []
+    }
+  ],
+  "demo": true,
+  "updatedAt": "2026-01-01T12:00:00.000Z",
+  "cloud": {
+    "status": "demo"
+  }
+}

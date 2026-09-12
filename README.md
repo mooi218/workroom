@@ -1,109 +1,111 @@
 # Workroom
 
-**仕事が見える、小さなオフィス。**
+**A little office where you can see your work happening.**
 
-Codex と ChatGPT Work の仕事を、役割ごとのピクセルオフィスで見渡すローカルアプリです。仕事が増えたら机も増えます。役割も席も4つに制限しません。
+Workroom turns activity from your local Codex projects into a live pixel office. Tasks get desks, titles appear in speech bubbles, and departments show the kinds of work being done. Choose a seat to see its task and status, or add a little office life with typing, sounds, coffee breaks, and printing animations.
 
-[English](README.en.md) · [ブラウザー拡張](extension/README.md) · [MIT License](LICENSE)
+[Try it in your browser](https://mooi218.github.io/workroom/) · [Download](https://github.com/mooi218/workroom/releases/latest) · [日本語](README.ja.md) · [Contributing](CONTRIBUTING.md) · [MIT License](LICENSE)
 
-## できること
+The main integration reads **Codex work recorded on this computer**. The included ChatGPT Work browser observer is experimental and only observes supported, open pages; see [coverage](#coverage-and-task-states) before relying on it.
 
-- 広報・営業・エンジニア・デザイン・編集・リサーチ・企画・運営などに自動で振り分け。
-- 好きな役割とキーワードを追加。個別の仕事は担当を手動変更。
-- 初期表示は稼働中だけ。仕事の内容を吹き出しで表示します。
-- そのターンの記録で確認できた実装・制作・発信などに合わせ、同じ仕事を複数部署に配置。AIタスクは追加せず、席だけを増やします。
-- このPCのCodexの全プロジェクトを読み取り、約2.5秒ごとに状態を自動更新。
-- プロジェクト・役割・状態で絞り込み、オフィスと仕事一覧を切り替え。
-- 作業中のタイピング、開始・完了・確認待ちの短い通知音。音・動きは別々にオン／オフ、音量調整も可能。
-- 音は最初はオフ。画面を開いただけでは鳴りません。OSの動きを減らす設定も尊重します。
-- 日本語・英語・中国語（簡体）・スペイン語・ポルトガル語・フランス語・ヒンディー語・アラビア語に対応。画面の表示言語を切り替えます。仕事のタイトルは元の言語を保ち、AI翻訳は行いません。
-- ライト・ダーク・端末に合わせるテーマ切り替え。
-- コーヒー・印刷・ソファでの休憩などの生活演出。「立ち歩き」は独立した設定で、**初期状態はオフ**。元の席の吹き出しと状態は残ります。全体のアニメーションをオフにすると、すべての動きを止めます。
-- サンプルの仕事で試せるデモ。実際のCodexタスクは起動・停止・変更しません。
+## Start your office
 
-## AIクレジット
+1. Install [Node.js 24 or later](https://nodejs.org/).
+2. Download the ZIP from [Releases](https://github.com/mooi218/workroom/releases/latest) and extract it, or clone this repository.
+3. Open `start-windows.cmd` on Windows or `start-macos.command` on macOS. The launcher starts Workroom and opens your browser.
 
-**このアプリの表示・分類・同期・アニメーション・音は、AIを呼び出しません。追加のAIクレジットは0です。**
-
-Codex / Work で仕事そのものを実行する費用や、アプリを開発・変更するためにAIを使う場合の利用量は別です。CPU・メモリ・電力は少量使用します。「実際の仕事も無料になる」アプリではありません。
-
-外部パッケージのインストール、APIキー、監視用のAIタスク、AIによる定期巡回は不要です。
-
-## 起動
-
-1. [Node.js](https://nodejs.org/) **24以上**をインストール。
-2. このリポジトリをダウンロードして展開、またはクローン。
-3. Windowsは `start-windows.cmd` を開きます。macOS/Linuxはフォルダー内で `npm start` を実行。
-4. ブラウザーで **http://127.0.0.1:4318** を開きます。
+You can also run this from the extracted folder on Windows, macOS, or Linux:
 
 ```sh
 npm start
 ```
 
-`npm install` は不要です。終了するときは起動したウィンドウで Ctrl+C。次回も同じ方法で起動します。OSへの自動起動登録は行いません。
+No `npm install` step is needed: Workroom has no runtime package dependencies. Node.js is still required. If a launcher does not open, use the terminal command above.
 
-サンプルのみを表示する場合：
+The office runs at [127.0.0.1:4318](http://127.0.0.1:4318). Keep the launch terminal open while using it, and press **Ctrl+C** there to stop. Workroom does not add itself to your operating system’s startup apps.
 
-```sh
-npm run demo
-```
+### Try sample tasks
 
-通常起動の画面にある「デモを見る」でも切り替えられます。すべて架空の仕事です。
+Open the [interactive browser demo](https://mooi218.github.io/workroom/) to try the office immediately, including the completion tray. It uses only fictional jobs and does not connect to your Codex records.
 
-### 場所やポートを指定
+Choose **Try the demo** inside Workroom, or start with fictional tasks:
 
 ```sh
-node server.mjs --codex-home /path/to/.codex --port 4318 --data-dir /path/to/workroom-data
+npm run demo -- --open
 ```
 
-既定の読み取り元は `CODEX_HOME`、未設定ならユーザーの `.codex` です。接続コードは起動フォルダーの `.workroom/`、役割・担当変更・音設定はブラウザー内に保存します。`.workroom/` はGitの対象外です。拡張は既定ポート4318に接続するため、拡張利用時はポートを変更しないでください。
+Use this mode to explore the office, test sounds, or share screenshots. It does not start or change your real Codex tasks.
 
-## 連携範囲と状態の意味
+## Make the work easy to follow
 
-| 対象 | 自動反映の範囲 |
+- **See tasks at a glance.** A compact top bar sits above the office map, with task and team details in panels on the right. Active tasks appear by default, with a title bubble and status at each desk. A task list is also available.
+- **Focus on the office.** Open just the office map in fullscreen. Press **Escape** to return to the normal view.
+- **Collect finished responses.** The delivery tray highlights newly completed responses and links back to their tasks. Older completions are not flagged as new deliveries. Each delivery marks the latest response finishing; the overall project may still be in progress.
+- **Organize by role.** Start with engineering, design, public relations, sales, editorial, research, planning, and operations. Add custom roles and keywords, or assign a task manually. Rooms and desks expand with the work; there is no fixed four-seat limit.
+- **Follow activity across departments.** One task can appear in several departments when its current turn contains several kinds of recorded activity. Task and seat counts are displayed separately.
+- **Find the right project.** Filter by project, department, or state. Task and project groups use readable names to keep the office easy to scan.
+- **Choose your atmosphere.** A navy pixel-studio look, readable typography, light mode, graphite dark in gray and black, and green dark give the office its own character. You can also follow your device’s appearance setting.
+- **Add a little life.** Sounds, animations, and leaving the desk have separate controls. Sound and leaving the desk start off; volume is adjustable. Reduced-motion preferences are respected.
+- **Pick your language.** The first visit follows a supported browser language, with English as the fallback. Switch between English, Japanese, Simplified Chinese, Spanish, Portuguese, French, Hindi, and Arabic; your saved choice takes priority. Task content and custom role names retain their original language.
+
+Coffee, printing, sofa breaks, and sleeping are playful office effects. They do not report actual tool actions. Task bubbles and status indicators remain at their original desks, and turning animations off stops all movement.
+
+## Coverage and task states
+
+| Source | What Workroom can show |
 | --- | --- |
-| このPCのCodexアプリ / CLI | `.codex` に保存されている未アーカイブの仕事。全プロジェクトと通常のサブエージェント。内部のguardianレビューは除外。 |
-| ChatGPT Work | 付属のChrome / Edge拡張が、開いているページで観測した仕事。拡張の設定と追跡開始が必要。 |
-| 別のPC、未表示のWork、クラウド全件 | 自動取得を保証していません。公開APIによる全Workの一括同期は実装していません。 |
+| Local Codex app / CLI | Unarchived tasks in compatible local Codex records, across projects and ordinary subagents. Internal guardian review tasks are excluded. |
+| ChatGPT Work | Tasks observed on supported, open ChatGPT pages by the optional Chrome / Edge extension. A clearly identified Work page or explicit task selection is required. |
+| Other computers or unobserved cloud work | Not covered. Workroom does not synchronize every cloud Work task in the background. |
 
-**クラウド全仕事の完全な自動同期には未対応です。** 拡張は実験的なDOM観測です。ログイン済みのページを開き、拡張で対象を選びます。隠れたページ・未表示の仕事の状態は取得できません。通常のチャットを勝手にWorkとして扱わず、状態不明を完了に置き換えません。約90秒観測が途切れたクラウドの仕事は「未確認」に変わります。
+Local records refresh about every **2.5 seconds**. This is a view of recorded activity: Workroom does not start, resume, stop, or edit the underlying tasks.
 
-ローカルの「完了」は**最後のターンの完了**です。プロジェクト全体が完了したという意味ではありません。15分以上更新のない「実行中」記録は、長時間処理や異常終了の区別ができないため「未確認」にします。確認待ちの種類によっては保存記録から判別できません。
+**Done means the latest turn completed**, not that an entire project is finished. A local running record with no activity for 15 minutes becomes unconfirmed because a long-running operation and a stopped process cannot always be distinguished. Some kinds of approval or input waits cannot be identified from the saved records.
 
-部署の判定は、現在のターンで観測できたツール・変更対象・限定されたコマンド情報と、サブエージェントの明示的な担当を使う固定ルールです。同じターンで確認した工程を終了までまとめて表示するため、各部署の独立したAI人数や厳密な同時実行を意味しません。コード内に直接書かれた呼出しは静的に分類し、変数や分岐の実行結果は推測しません。作業の意味をAIが理解しているわけではなく、未知のツールや間接的な操作では判断できません。根拠がないときはタイトル・担当名のキーワードへ戻り、どちらで判定したか詳細に表示します。複数部署の席数と実際の仕事の件数を分けて表示します。コーヒーや睡眠などは演出で、実際のツール実行を意味しません。
+Department assignment uses fixed rules over current-turn tool names, changed paths, limited command metadata, and explicit subagent assignments. It keeps the departments observed during that turn until the turn ends. Several desks therefore do not imply several independent agents or prove simultaneous execution. Direct calls written in orchestration code can be classified statically; indirect calls and unknown tools may not be recognized. Title and assignment keywords are the fallback, and the detail panel identifies the basis for the assignment.
 
-ローカル保存形式はOpenAIの非公開実装に依存します。更新で形式が変わった場合は、読み取り不能や未確認として表示します。Codexのデータを修復・書き換えることはありません。[公式App Serverの仕様](https://learn.chatgpt.com/docs/app-server)にある稼働状態通知は、別途起動したサーバーから既存のデスクトップタスクを完全に観測できる保証ではないため、このアプリでは保存記録を読んでいます。
+Codex’s local storage format can change. Unsupported records appear as unavailable or unconfirmed; Workroom does not repair or rewrite Codex data.
 
-## ChatGPT Work拡張の接続
+### Experimental ChatGPT Work observer
 
-1. Workroomを通常起動。
-2. Chrome/Edgeの拡張管理画面でデベロッパーモードを有効にし、「パッケージ化されていない拡張機能を読み込む」で `extension` フォルダーを選択。
-3. Workroomの設定で接続コードを表示し、拡張のポップアップへ入力。
-4. ChatGPTの対象ページを開き、拡張で追跡を開始。
+The extension is **not installed automatically**, and its current installation flow and selectors **have not been verified against a live ChatGPT Work account**. It observes the rendered page rather than providing a complete cloud task integration. Page changes can make a status unreadable.
 
-詳細・権限・制約は [extension/README.md](extension/README.md) を参照してください。拡張の実際のChatGPT画面での動作は公開前のこの環境では未検証です。画面変更で観測できない場合は「未確認」を表示します。
+1. Start Workroom normally.
+2. Open Chrome or Edge’s extension manager, enable developer mode, and load the `extension` folder as an unpacked extension.
+3. In Workroom’s settings, display the pairing code and enter it in the extension’s popup.
+4. Open the ChatGPT task page and select it for tracking. Automatic tracking only applies when an explicit Work indicator is recognized.
 
-## データと安全性
+The observer sends the title, conversation URL, and visible state to the local office. It does not read conversation bodies, cookies, or account credentials. An ordinary chat is not automatically treated as Work. Missing controls never imply successful completion; cloud observations become unconfirmed after about **90 seconds** without an update. Closed, suspended, or otherwise unobserved pages cannot provide a reliable current status.
 
-- サーバーは `127.0.0.1` だけで待ち受けます。LANやインターネットに公開しないでください。
-- OpenAIの認証情報・Cookieは読み取りません。AIエンドポイントへの通信もありません。
-- 保存記録からタイトル、プロジェクト、状態・時刻を抽出。担当判定のためツール情報の限られた部分をこのPC内で読みます。会話本文・推論・ツールの引数や出力を画面に渡しません。
-- 拡張は観測したタイトル・URL・状態をこのPCへ送ります。会話本文は送りません。
-- 接続コードはローカルの書き込み用認証です。GitHubに載せたり他人に渡したりしないでください。
-- GitHubに公開するのはアプリのソースです。あなたの仕事、Codexの記録、接続コードは含めません。
-- 画面を共有する場合は「デモを見る」でサンプルへ切り替えてください。
+See the [extension guide](extension/README.md) for its supported URL formats, permissions, and observation rules.
 
-## 開発・検証
+## Local settings and data
 
-Node標準ライブラリとブラウザー標準APIだけで動きます。UIの描画はCanvas、音はWeb Audio、画面更新はSSE。描画は見えている範囲に限定し、非表示のタブではアニメーションを止めます。
+The default source is `CODEX_HOME`, or your home directory’s `.codex` folder when that variable is unset. To choose locations or a port:
+
+```sh
+node server.mjs --codex-home /path/to/.codex --port 4318 --data-dir /path/to/workroom-data --open
+```
+
+- The server listens on `127.0.0.1` only. Keep it on this computer; do not expose it to a network.
+- Pairing data is stored in `.workroom/` in the launch folder by default. Keep the pairing code private. The extension uses port **4318**, so retain that port when using it.
+- Appearance, language, sound, custom roles, and manual assignments are saved in the browser. Cloud observations stay in server memory and must be observed again after a restart.
+- The local adapter extracts task metadata and limited activity details. It does not send conversation bodies, reasoning, tool arguments, or tool output to the browser. It does not read OpenAI authentication files.
+- Real task records, pairing data, and private screenshots do not belong in the public repository. Use the demo for screenshots and invented examples for reports.
+
+> **Usage note:** Workroom’s display, classification, synchronization, and effects do not consume AI credits. Running your Codex or Work tasks still uses their normal allowance; the app uses local computer resources.
+
+## Development
+
+Workroom uses Node.js standard libraries and browser APIs: Canvas for the office, Web Audio for tones, and server-sent events for updates. Rendering is limited to the visible area, and animations pause in hidden tabs. The office and its animated sprites are drawn in code, and notification tones are synthesized in code. A separate generated studio artwork provides narrow decorative strips in the header and footer.
+
+Numbers and English text use bundled IBM Plex Sans; Japanese text uses bundled Noto Sans JP. Pixelify Sans is reserved for branding. The font files and their OFL license texts are included with the app.
 
 ```sh
 npm test
 npm run check
 ```
 
-テストは合成SQLite/JSONL、ローカルHTTP、DOMの合成観測を使います。CodexやChatGPTへ仕事を送信しません。
+Tests use synthetic records and local transport fixtures. They do not submit tasks to Codex or ChatGPT, and synthetic observer tests are not live-page validation. See [Contributing](CONTRIBUTING.md) to report a bug, improve a translation, or propose a change.
 
-不具合報告にはNode/Codexのバージョン、OS、エラーの概要を添えてください。私的なタイトル、接続コード、Codexのデータベースや会話ログは添付しないでください。
-
-独立したコミュニティプロジェクトです。OpenAI公式製品ではありません。ピクセルアートと通知音はコードで描画・生成したオリジナルです。
+Workroom is an independent community project, not an official OpenAI product. Released under the [MIT License](LICENSE).
