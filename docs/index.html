@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./studio.css" />
     <link rel="stylesheet" href="./delivery.css" />
+    <link rel="stylesheet" href="./pixel-ui.css" />
   <link rel="canonical" href="https://mooi218.github.io/workroom/"><meta property="og:title" content="Workroom — A living pixel studio"><meta property="og:type" content="website"><meta property="og:description" content="See your work in motion. Try the interactive office demo, then connect your own Codex tasks locally."></head>
   <body>
     <header class="app-header">
@@ -102,6 +103,14 @@
             デモの仕事を完了させる
           </button>
         </section>
+        <div class="studio-clock">
+          <div class="clock-face">
+            <time id="clock-date" class="clock-date"></time
+            ><time id="clock-time" class="clock-time"></time>
+          </div>
+          <div class="clock-mascot" aria-hidden="true"></div>
+          <span id="clock-greeting" class="clock-greeting"></span>
+        </div>
       </div>
       <div id="notice" class="notice" hidden></div>
       <p id="active-help" class="active-hint"></p>
@@ -165,12 +174,15 @@
             <h2>いま、ここで</h2>
             <div class="stats">
               <button data-filter="working">
+                <span class="pulse-character working" aria-hidden="true"></span>
                 <b id="working-count">0</b
                 ><span><i class="working"></i>作業中</span></button
               ><button data-filter="waiting">
+                <span class="pulse-character waiting" aria-hidden="true"></span>
                 <b id="waiting-count">0</b
                 ><span><i class="waiting"></i>確認待ち</span></button
               ><button data-filter="done">
+                <span class="pulse-character done" aria-hidden="true"></span>
                 <b id="done-count">0</b><span><i class="done"></i>完了</span>
               </button>
             </div>

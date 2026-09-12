@@ -225,6 +225,7 @@ function localize() {
   text("#project-info-title", "projectHelpTitle");
   text("#project-info-text", "projectHelp");
   text("#demo-step", "demoStep");
+  text("#clock-greeting", "clockGreeting");
   delivery.refreshText();
   focusView.refreshText();
   attr("#project-info-dialog .icon-button", "aria-label", "close");
@@ -260,7 +261,7 @@ function localize() {
   text(".teams-section h2", "teams");
   text("#add-role", "addRole");
   for (const button of document.querySelectorAll("[data-filter]")) {
-    const span = button.querySelector("span"),
+    const span = button.querySelector("span:not(.pulse-character)"),
       dot = span.querySelector("i");
     span.replaceChildren(
       dot,
@@ -438,11 +439,23 @@ function render() {
   $("#floor-label").textContent =
     groupWork(tasks).find((group) => group.key === project)?.name ||
     t("allProjects");
-  for (const status of ["working", "waiting", "done"])
-    $(`#${status}-count`).textContent = tasks.filter(
+  for (const status of ["working", "waiting", "done"]) {
+    const count = tasks.filter(
       (task) =>
         (!project || projectKey(task) === project) && task.status === status,
     ).length;
+    const number = $(`#${status}-count`);
+    number.textContent =
+      count >= 1000
+        ? new Intl.NumberFormat(getLocale(), {
+            notation: "compact",
+            maximumFractionDigits: 1,
+          }).format(count)
+        : String(count);
+    number.title = String(count);
+    number.setAttribute("aria-label", String(count));
+    number.closest("button").dataset.wide = String(count >= 100);
+  }
   const teamRoot = $("#teams");
   teamRoot.replaceChildren();
   for (const role of roles) {
@@ -542,7 +555,7 @@ function selectTask(id) {
       office.seats[i].task.taskId === id,
     );
   renderDetails();
-  if (innerWidth < 1100)
+  if (innerWidth < 1100 && !focusView.active)
     $("#task-details").scrollIntoView({
       behavior: settings.motion ? "smooth" : "auto",
       block: "nearest",
@@ -954,3 +967,21 @@ document.addEventListener(
 localize();
 connect();
 document.fonts?.ready.then(() => office.draw());
+
+function updateClock() {
+  const now = new Date();
+  const date = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join(".");
+  $("#clock-date").textContent = date;
+  $("#clock-date").dateTime = now.toISOString();
+  $("#clock-time").textContent = [now.getHours(), now.getMinutes()]
+    .map((n) => String(n).padStart(2, "0"))
+    .join(":");
+  $("#clock-time").dateTime = now.toISOString();
+  $("#clock-greeting").textContent = t("clockGreeting");
+}
+updateClock();
+setInterval(updateClock, 30000);

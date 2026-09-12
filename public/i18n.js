@@ -195,6 +195,7 @@ export const TRANSLATIONS = {
     focusEnter: "社員の様子を全画面で表示",
     focusExit: "全画面を終了",
     demoStep: "デモの仕事を完了させる",
+    clockGreeting: "今日も、いい仕事を。",
   },
   en: {
     appTitle: "Workroom — A little office for your work",
@@ -350,6 +351,7 @@ export const TRANSLATIONS = {
     focusEnter: "Show the office in full screen",
     focusExit: "Exit full screen",
     demoStep: "Finish a sample job",
+    clockGreeting: "Make good work today.",
   },
   zh: {
     appTitle: "Workroom — 看得见工作的小办公室",
@@ -496,6 +498,7 @@ export const TRANSLATIONS = {
     focusEnter: "全屏显示办公室",
     focusExit: "退出全屏",
     demoStep: "完成一个示例任务",
+    clockGreeting: "今天也做好工作。",
   },
   es: {
     appTitle: "Workroom — Una pequeña oficina para tu trabajo",
@@ -655,6 +658,7 @@ export const TRANSLATIONS = {
     focusEnter: "Mostrar la oficina a pantalla completa",
     focusExit: "Salir de pantalla completa",
     demoStep: "Completar una tarea de ejemplo",
+    clockGreeting: "Hoy, hagamos un buen trabajo.",
   },
   pt: {
     appTitle: "Workroom — Um pequeno escritório para seu trabalho",
@@ -814,6 +818,7 @@ export const TRANSLATIONS = {
     focusEnter: "Mostrar o escritório em tela cheia",
     focusExit: "Sair da tela cheia",
     demoStep: "Concluir uma tarefa de exemplo",
+    clockGreeting: "Vamos fazer um bom trabalho.",
   },
   fr: {
     appTitle: "Workroom — Un petit bureau pour votre travail",
@@ -974,6 +979,7 @@ export const TRANSLATIONS = {
     focusEnter: "Afficher le bureau en plein écran",
     focusExit: "Quitter le plein écran",
     demoStep: "Terminer une tâche fictive",
+    clockGreeting: "Du beau travail, aujourd’hui.",
   },
   hi: {
     appTitle: "Workroom — आपके काम का छोटा-सा दफ़्तर",
@@ -1131,6 +1137,7 @@ export const TRANSLATIONS = {
     focusEnter: "दफ़्तर पूरे स्क्रीन पर दिखाएँ",
     focusExit: "पूरे स्क्रीन से बाहर जाएँ",
     demoStep: "एक नमूना काम पूरा करें",
+    clockGreeting: "आज भी अच्छा काम करें।",
   },
   ar: {
     appTitle: "Workroom — مكتب صغير لأعمالك",
@@ -1282,6 +1289,7 @@ export const TRANSLATIONS = {
     focusEnter: "عرض المكتب بملء الشاشة",
     focusExit: "الخروج من ملء الشاشة",
     demoStep: "إنهاء مهمة نموذجية",
+    clockGreeting: "لننجز عملًا جيدًا اليوم.",
   },
 };
 

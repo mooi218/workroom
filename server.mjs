@@ -228,6 +228,7 @@ export async function createWorkroom({
       "/focus.js": "public/focus.js",
       "/studio.css": "public/studio.css",
       "/delivery.css": "public/delivery.css",
+      "/pixel-ui.css": "public/pixel-ui.css",
       "/i18n.js": "public/i18n.js",
       "/style.css": "public/style.css",
       "/favicon.svg": "public/favicon.svg",
@@ -235,6 +236,10 @@ export async function createWorkroom({
     };
     for (const name of [
       "studio-banner.png",
+      "worker-atlas.png",
+      "furniture-atlas.png",
+      "frame-light.svg",
+      "frame-dark.svg",
       "fonts/pixelify-sans.woff2",
       "fonts/ibm-plex-sans.woff2",
       "fonts/noto-sans-jp.woff2",

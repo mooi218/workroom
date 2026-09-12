@@ -97,7 +97,7 @@ node server.mjs --codex-home /path/to/.codex --port 4318 --data-dir /path/to/wor
 
 ## Development
 
-Workroom uses Node.js standard libraries and browser APIs: Canvas for the office, Web Audio for tones, and server-sent events for updates. Rendering is limited to the visible area, and animations pause in hidden tabs. The office and its animated sprites are drawn in code, and notification tones are synthesized in code. A separate generated studio artwork provides narrow decorative strips in the header and footer.
+Workroom uses Node.js standard libraries and browser APIs: Canvas for the office, Web Audio for tones, and server-sent events for updates. Rendering is limited to the visible area, and animations pause in hidden tabs. Character and furniture artwork is bundled in sprite atlases; animation, layout, shadows, and notification tones run locally. Separate studio artwork provides narrow decorative strips in the header and footer.
 
 Numbers and English text use bundled IBM Plex Sans; Japanese text uses bundled Noto Sans JP. Pixelify Sans is reserved for branding. The font files and their OFL license texts are included with the app.
 
