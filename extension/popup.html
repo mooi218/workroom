@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Workroom に接続</title>
+    <link rel="stylesheet" href="popup.css" />
+    <script src="popup.js" defer></script>
+  </head>
+  <body>
+    <header class="brand">
+      <div class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div>
+        <div class="eyebrow">A LITTLE PLACE FOR BIG WORK</div>
+        <h1>Workroom<span>.</span></h1>
+      </div>
+      <span class="local-tag">LOCAL</span>
+    </header>
+    <main>
+      <section class="task-card" aria-labelledby="task-heading">
+        <div class="section-top">
+          <h2 id="task-heading">いま開いているタスク</h2>
+          <span id="status-badge" class="badge">不明</span>
+        </div>
+        <p id="task-title" class="task-title">読み込み中…</p>
+        <p id="tracking-detail" class="muted">
+          Work のタスクをオフィスに迎えます。
+        </p>
+        <button id="track-button" class="primary" type="button" disabled>
+          このタスクを追跡
+        </button>
+      </section>
+
+      <section class="connection" aria-labelledby="connection-heading">
+        <div class="section-top">
+          <h2 id="connection-heading">あなたのオフィスとつなぐ</h2>
+          <span id="connection-dot" class="dot" aria-hidden="true"></span>
+        </div>
+        <p id="connection-state" class="connection-state">
+          接続を確認しています…
+        </p>
+        <form id="settings-form">
+          <label for="pair-code">Workroom の接続コード</label>
+          <div class="code-row">
+            <input
+              id="pair-code"
+              name="pairCode"
+              type="password"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="256"
+              placeholder="接続コードを貼り付け"
+            />
+            <button id="save-button" class="secondary" type="submit">
+              保存
+            </button>
+          </div>
+          <p class="hint">Workroom の設定からコピーできます。</p>
+          <label class="switch-row" for="auto-detect"
+            ><span>Work 表示のあるタスクを自動追跡</span
+            ><input id="auto-detect" type="checkbox" role="switch" checked
+          /></label>
+        </form>
+        <button id="disconnect-button" class="text-button" type="button" hidden>
+          接続を解除
+        </button>
+      </section>
+      <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+      <footer>
+        <span class="privacy-mark" aria-hidden="true">↗</span>
+        <p>
+          送るのはタイトル・URL・表示状態だけ。<br />あなたのパソコン内でつながります。
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+node_modules/
+.workroom/
+*.log
+*.sqlite*
+*.jsonl
+.env*
+coverage/
+.DS_Store
+Thumbs.db
+/docs/workroom.png

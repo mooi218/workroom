@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Workroom — 仕事が見える、小さなオフィス</title>
+    <meta
+      name="description"
+      content="CodexとChatGPT Workの仕事を、役割ごとのオフィスで見渡すローカルアプリ。"
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <a class="brand" href="/" aria-label="Workroom ホーム"
+        ><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M2 2h10v10H2zm16 0h10v10H18zM2 18h10v10H2zm16 0h10v10H18z"
+          />
+          <path fill="#efede5" d="M5 5h4v4H5zm16 0h4v4h-4zM5 21h4v4H5z" /></svg
+        ><span>workroom<span class="brand-dot">.</span></span></a
+      >
+      <div class="header-note">YOUR LITTLE OFFICE</div>
+      <div class="header-tools">
+        <span id="connection" class="connection"><i></i> 接続中</span
+        ><select
+          id="language-quick"
+          class="language-picker"
+          aria-label="表示言語"
+        ></select
+        ><button
+          id="theme-toggle"
+          class="icon-button theme-button"
+          aria-label="テーマ"
+        >
+          ☾</button
+        ><button id="settings-open" class="icon-button" aria-label="設定を開く">
+          ⚙
+        </button>
+      </div>
+    </header>
+    <main>
+      <section class="workspace-heading">
+        <div>
+          <div class="eyebrow">WORK, TOGETHER</div>
+          <h1>
+            今日のオフィス<span class="small-sun" aria-hidden="true">✳</span>
+          </h1>
+        </div>
+        <div class="credit-note">
+          <span class="credit-number">0</span
+          ><span>表示・自動更新の<br />AIクレジット</span
+          ><span
+            class="tiny-info"
+            title="このアプリはAIを呼び出しません。CodexやWorkの仕事そのものには通常の利用量が発生します。"
+            >i</span
+          >
+        </div>
+      </section>
+      <section class="toolbar" aria-label="オフィスの絞り込み">
+        <div class="view-switch">
+          <button id="office-view" class="active" aria-pressed="true">
+            ▦ オフィス</button
+          ><button id="list-view" aria-pressed="false">☷ 仕事一覧</button>
+        </div>
+        <label class="select-wrap"
+          ><span class="sr-only">プロジェクト</span
+          ><select id="project-filter">
+            <option value="">すべてのプロジェクト</option>
+          </select></label
+        ><label class="select-wrap"
+          ><span class="sr-only">作業状態</span
+          ><select id="status-filter">
+            <option value="working" selected>稼働中だけ</option>
+            <option value="">すべての状態</option>
+            <option value="waiting">確認待ち</option>
+            <option value="done">完了</option>
+            <option value="idle">待機</option>
+            <option value="error">エラー</option>
+            <option value="unknown">未確認</option>
+          </select></label
+        >
+        <div class="toolbar-spacer"></div>
+        <button id="sound-toggle" class="quiet-button" aria-pressed="false">
+          ♪ 音 OFF</button
+        ><button id="motion-toggle" class="quiet-button" aria-pressed="true">
+          動き ON
+        </button>
+      </section>
+      <div id="notice" class="notice" hidden></div>
+      <p id="active-help" class="active-hint"></p>
+      <div class="workspace-grid">
+        <section class="office-panel" aria-label="役割ごとのオフィス">
+          <div class="floor-heading">
+            <div>
+              <span class="live-dot"></span
+              ><strong id="floor-label">ALL PROJECTS</strong
+              ><span id="seat-count" class="muted"></span>
+            </div>
+            <div class="zoom-tools">
+              <button id="zoom-out" aria-label="縮小">−</button
+              ><span id="zoom-label">100%</span
+              ><button id="zoom-in" aria-label="拡大">＋</button
+              ><button id="zoom-fit">全体</button>
+            </div>
+          </div>
+          <div id="office-viewport">
+            <div id="office-world">
+              <canvas
+                id="office-canvas"
+                aria-label="役割ごとに仕事を配置したオフィス"
+              ></canvas>
+              <div id="seat-overlay"></div>
+            </div>
+          </div>
+          <div id="jobs-table" hidden></div>
+          <div class="floor-footer">
+            <div class="legend">
+              <span><i class="working"></i>作業中</span
+              ><span><i class="waiting"></i>確認待ち</span
+              ><span><i class="done"></i>完了</span
+              ><span><i class="unknown"></i>未確認</span>
+            </div>
+            <span id="last-sync" class="muted">状態を確認しています</span>
+          </div>
+        </section>
+        <aside class="side-panel">
+          <section class="overview">
+            <div class="section-kicker">OFFICE PULSE</div>
+            <h2>いま、ここで</h2>
+            <div class="stats">
+              <button data-filter="working">
+                <b id="working-count">0</b
+                ><span><i class="working"></i>作業中</span></button
+              ><button data-filter="waiting">
+                <b id="waiting-count">0</b
+                ><span><i class="waiting"></i>確認待ち</span></button
+              ><button data-filter="done">
+                <b id="done-count">0</b><span><i class="done"></i>完了</span>
+              </button>
+            </div>
+          </section>
+          <section class="teams-section">
+            <div class="section-line">
+              <h2>チーム</h2>
+              <button id="add-role" class="text-button">＋ 役割を追加</button>
+            </div>
+            <div id="teams"></div>
+          </section>
+          <section id="task-details" class="detail-panel">
+            <div class="section-kicker">AT YOUR DESK</div>
+            <div class="empty-detail">
+              <span aria-hidden="true">↖</span>
+              <h3>席を選んでみよう</h3>
+              <p>担当している仕事と<br />現在の状態が見られます。</p>
+            </div>
+          </section>
+          <section class="source-footnote">
+            <span id="source-summary">ローカルで同期</span
+            ><button id="demo-toggle" class="text-button">デモを見る ↗</button>
+          </section>
+        </aside>
+      </div>
+      <footer class="page-footer">
+        <span>ひとつひとつの仕事に、居場所を。</span
+        ><span>LOCAL FIRST · NO MODEL CALLS</span>
+      </footer>
+    </main>
+    <dialog id="settings-dialog">
+      <form method="dialog">
+        <div class="dialog-heading">
+          <h2>オフィスの設定</h2>
+          <button class="icon-button" aria-label="設定を閉じる">×</button>
+        </div>
+      </form>
+      <div class="settings-content">
+        <label class="setting-row"
+          ><strong id="lang-label">表示言語</strong
+          ><select id="language-setting" class="settings-language"></select
+        ></label>
+        <p id="language-note" class="settings-help"></p>
+        <label class="setting-row"
+          ><strong id="theme-label">テーマ</strong
+          ><select id="theme-setting" class="settings-theme">
+            <option value="system">端末に合わせる</option>
+            <option value="light">ライト</option>
+            <option value="dark">ダーク</option>
+          </select></label
+        >
+        <div class="setting-row">
+          <div>
+            <strong>サウンド</strong>
+            <p>開始・完了・確認待ちを短い音で知らせます。</p>
+          </div>
+          <input
+            id="sound-setting"
+            type="checkbox"
+            role="switch"
+            aria-label="サウンド"
+          />
+        </div>
+        <label class="setting-row"
+          ><span>音量</span
+          ><input
+            id="volume-setting"
+            type="range"
+            min="0"
+            max="100"
+            aria-label="音量" /></label
+        ><button id="test-sound" class="secondary-button">音を試す</button>
+        <div class="setting-row">
+          <div>
+            <strong>アニメーション</strong>
+            <p>作業中のタイピングとオフィスの小さな動き。</p>
+          </div>
+          <input
+            id="motion-setting"
+            type="checkbox"
+            role="switch"
+            aria-label="アニメーション"
+          />
+        </div>
+        <div class="setting-row">
+          <div>
+            <strong id="walking-label">立ち歩き</strong>
+            <p id="walking-help">コーヒー・印刷・ソファでの休憩。</p>
+          </div>
+          <input
+            id="walking-setting"
+            type="checkbox"
+            role="switch"
+            aria-label="立ち歩き"
+          />
+        </div>
+        <p id="walking-note" class="settings-help">初期設定はオフです。</p>
+        <p id="effects-note" class="settings-help"></p>
+        <div class="setting-row">
+          <div>
+            <strong id="cloud-heading">ChatGPT Workとの接続</strong>
+            <p id="cloud-help">
+              ブラウザー拡張で観測した仕事を、このPCに反映します。
+            </p>
+          </div>
+        </div>
+        <p id="cloud-limit" class="settings-help">
+          クラウドの画面に表示されていない状態は「未確認」になります。接続コードは拡張の設定にだけ入力してください。
+        </p>
+        <button id="pair-show" class="secondary-button">
+          接続コードを表示
+        </button>
+        <div id="pair-area" hidden>
+          <input id="pair-token" readonly aria-label="接続コード" /><button
+            id="pair-copy"
+            class="secondary-button"
+          >
+            コピー
+          </button>
+        </div>
+        <p class="settings-help" id="health-details"></p>
+        <p class="settings-help">
+          設定はこのブラウザーに保存されます。表示・分類・通知にはAIを使いません。仕事そのものの実行には通常の利用量が発生します。
+        </p>
+      </div>
+    </dialog>
+    <dialog id="role-dialog">
+      <form id="role-form">
+        <div class="dialog-heading">
+          <h2>役割を追加</h2>
+          <button
+            type="button"
+            id="role-close"
+            class="icon-button"
+            aria-label="閉じる"
+          >
+            ×
+          </button>
+        </div>
+        <label
+          >役割名<input
+            id="role-name"
+            required
+            maxlength="30"
+            placeholder="例：カスタマーサポート" /></label
+        ><label>色<input id="role-color" type="color" value="#68988b" /></label
+        ><label
+          >振り分けキーワード<input
+            id="role-keywords"
+            maxlength="300"
+            placeholder="問い合わせ, サポート, support"
+        /></label>
+        <p class="settings-help">
+          仕事のタイトルやプロジェクト名で判定します。あとから席ごとに担当を変更することもできます。
+        </p>
+        <button class="primary-button" type="submit">
+          役割とスペースを作る
+        </button>
+      </form>
+    </dialog>
+    <div id="toast" role="status" hidden></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

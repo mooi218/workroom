@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Workroom — ChatGPT Work Observer",
+  "description": "ChatGPT Work の表示状態を、あなたのパソコンの Workroom に反映します。AI 呼び出しは行いません。",
+  "version": "0.1.0",
+  "minimum_chrome_version": "116",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://chatgpt.com/*", "http://127.0.0.1:4318/*"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "Workroom に接続",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*"],
+      "js": ["observer-core.js", "content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src http://127.0.0.1:4318"
+  }
+}
