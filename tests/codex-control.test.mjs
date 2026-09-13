@@ -870,7 +870,8 @@ test("resolver unwraps standard npm shims and never invokes cmd or a user-built 
   await writeFile(entry, "// synthetic resolver fixture\n");
   const result = await resolveCodexLaunch({
     codexPath: shim,
-    platform: "win32",
+    // This fixture is created on the host filesystem; keep its native path rules.
+    platform: process.platform,
   });
   assert.equal(result.command, process.execPath);
   assert.equal(result.args[0], await realpath(entry));
