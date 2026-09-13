@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/studio.css" />
     <link rel="stylesheet" href="/delivery.css" />
     <link rel="stylesheet" href="/pixel-ui.css" />
+    <link rel="stylesheet" href="/connection-guide.css" />
   </head>
   <body>
     <header class="app-header">
@@ -27,7 +28,13 @@
       >
       <div class="header-note">YOUR LITTLE OFFICE</div>
       <div class="header-tools">
-        <span id="connection" class="connection"><i></i> 接続中</span
+        <button
+          type="button"
+          id="connection"
+          class="connection"
+          aria-label="接続ガイド"
+        >
+          <i></i> 接続中</button
         ><select
           id="language-quick"
           class="language-picker"
@@ -177,6 +184,21 @@
           </div>
         </section>
         <aside class="side-panel">
+          <section id="codex-usage" class="usage-panel">
+            <div class="section-line">
+              <h2 id="usage-heading">Codexの使用量</h2>
+              <span id="usage-plan"></span
+              ><button
+                id="usage-refresh"
+                class="icon-button"
+                aria-label="使用量を更新"
+              >
+                ↻
+              </button>
+            </div>
+            <div id="usage-windows"></div>
+            <p id="usage-message" class="muted" role="status"></p>
+          </section>
           <section class="overview">
             <div class="section-kicker">OFFICE PULSE</div>
             <h2>いま、ここで</h2>
@@ -234,6 +256,18 @@
             <span id="source-summary">ローカルで同期</span
             ><button id="demo-toggle" class="text-button">デモを見る ↗</button>
           </section>
+          <section class="command-panel">
+            <h2 id="command-heading">Codexに指示</h2>
+            <p id="command-context" class="muted"></p>
+            <div class="command-actions">
+              <button id="command-continue" class="secondary-button" disabled>
+                この仕事に指示</button
+              ><button id="command-new" class="primary-button">
+                ＋ 新しい仕事
+              </button>
+            </div>
+            <p id="command-handoff" class="muted" hidden></p>
+          </section>
         </aside>
       </div>
       <footer class="page-footer">
@@ -241,6 +275,41 @@
         ><span id="credit-footnote">表示の追加AI利用なし</span>
       </footer>
     </main>
+    <dialog id="command-dialog">
+      <form id="command-form">
+        <div class="dialog-heading">
+          <h2 id="command-dialog-title">Codexに指示</h2>
+          <button
+            id="command-close"
+            type="button"
+            class="icon-button"
+            aria-label="閉じる"
+          >
+            ×
+          </button>
+        </div>
+        <p id="command-target"></p>
+        <label id="command-project-row" class="command-field"
+          ><span id="command-project-label">作業場所</span
+          ><select id="command-project"></select
+        ></label>
+        <label class="command-field"
+          ><span id="command-input-label">指示</span
+          ><textarea
+            id="command-text"
+            rows="6"
+            maxlength="8000"
+            required
+          ></textarea>
+        </label>
+        <p id="command-hint" class="settings-help"></p>
+        <p id="command-restriction" class="settings-help"></p>
+        <p id="command-feedback" role="status"></p>
+        <button id="command-send" class="primary-button" type="submit">
+          Codexに送信
+        </button>
+      </form>
+    </dialog>
     <dialog id="project-info-dialog">
       <form method="dialog">
         <div class="dialog-heading">
@@ -258,6 +327,13 @@
         </div>
       </form>
       <div class="settings-content">
+        <button
+          type="button"
+          id="connection-guide-open"
+          class="secondary-button"
+        >
+          接続ガイド
+        </button>
         <label class="setting-row"
           ><strong id="lang-label">表示言語</strong
           ><select id="language-setting" class="settings-language"></select
@@ -291,8 +367,28 @@
             type="range"
             min="0"
             max="100"
-            aria-label="音量" /></label
-        ><button id="test-sound" class="secondary-button">音を試す</button>
+            aria-label="音量"
+        /></label>
+        <div class="setting-row">
+          <div>
+            <strong id="office-sounds-label">オフィスの生活音</strong>
+            <p id="office-sounds-help">
+              タイピング、足音、コーヒー、印刷と静かな環境音。
+            </p>
+          </div>
+          <input
+            id="office-sounds-setting"
+            type="checkbox"
+            role="switch"
+            aria-label="オフィスの生活音"
+          />
+        </div>
+        <div class="sound-preview-row">
+          <select id="sound-preview" aria-label="試す効果音">
+            <option value="success">作業完了</option>
+          </select>
+          <button id="test-sound" class="secondary-button">音を試す</button>
+        </div>
         <div class="setting-row">
           <div>
             <strong>アニメーション</strong>

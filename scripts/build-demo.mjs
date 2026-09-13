@@ -10,6 +10,12 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 export const DEMO_ASSETS = [
   "app.js",
   "office.js",
+  "sound.js",
+  "sound-catalog.js",
+  "features-i18n.js",
+  "controls.js",
+  "connection-guide.js",
+  "connection-guide.css",
   "i18n.js",
   "projects.js",
   "delivery.js",
@@ -75,6 +81,11 @@ export async function buildDemo(output = path.join(root, "docs")) {
   );
   // The online demo shares the app UI, but has no local-server connection.
   await writeFile(path.join(output, "index.html"), html);
+  // The public demo never redistributes the user's imported recordings.
+  await writeFile(
+    path.join(output, "sound-manifest.json"),
+    JSON.stringify({ available: [] }),
+  );
   for (const asset of DEMO_ASSETS) {
     const target = path.join(output, asset);
     await mkdir(path.dirname(target), { recursive: true });

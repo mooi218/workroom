@@ -60,6 +60,13 @@ const LIGHT = {
 };
 const hash = (value) =>
   [...String(value)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 0);
+const WALK_STRIDE = 28;
+const WALK_VECTORS = {
+  front: [0, 1],
+  back: [0, -1],
+  left: [-1, 0],
+  right: [1, 0],
+};
 const SKIN = ["#d4ad80", "#b78863", "#e0bf93", "#996a4e"];
 const HAIR = ["#514b3e", "#353e37", "#766043", "#665b48"];
 const blendHex = (color, base, amount) => {
@@ -172,13 +179,16 @@ const PROP_RECTS = {
 };
 
 export class Office {
-  constructor({ canvas, overlay, world, viewport, onSelect }) {
+  constructor({ canvas, overlay, world, viewport, onSelect, onActivity }) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.overlay = overlay;
     this.world = world;
     this.viewport = viewport;
     this.onSelect = onSelect;
+    this.onActivity = onActivity;
+    this.activityAt = new Map();
+    this.typingBursts = new Map();
     this.motion = true;
     this.wandering = false;
     this.frame = 0;
@@ -196,6 +206,8 @@ export class Office {
     this.assetImages = [];
     this.badges = [];
     this.destroyed = false;
+    this.lastTickAt = this.tickNow();
+    this.lastDrawTime = -Infinity;
     this.loadAtlas("people", "./assets/people-coarse.png");
     this.loadAtlas("actions", "./assets/people-actions-coarse.png");
     for (let sheet = 1; sheet <= 4; sheet++)
@@ -203,14 +215,20 @@ export class Office {
         `furniture${sheet}`,
         `./assets/furniture-coarse-${sheet}.png`,
       );
-    // A shared, low-frequency animation clock. Hidden tabs and motion-off consume no drawing work.
+    // Walking uses 20 fps; seated scenes retain the lighter 10 fps drawing rate.
     this.timer = setInterval(() => {
-      if (this.motion && !document.hidden) {
-        this.frame++;
-        this.time += 0.1;
-        this.draw();
+      const now = this.tickNow(),
+        elapsed = Math.min(0.15, Math.max(0, (now - this.lastTickAt) / 1000));
+      this.lastTickAt = now;
+      if (this.motion && !document.hidden && !this.viewport.hidden) {
+        this.time += elapsed;
+        if (this.visits.size || this.time - this.lastDrawTime >= 0.095) {
+          this.frame++;
+          this.lastDrawTime = this.time;
+          this.draw();
+        }
       }
-    }, 100);
+    }, 50);
     this.resize = new ResizeObserver(() => {
       const columns = this.columnCount();
       if (this.tasks && columns !== this.columns)
@@ -221,6 +239,7 @@ export class Office {
     this.onScroll = () => this.draw();
     viewport.addEventListener("scroll", this.onScroll, { passive: true });
     this.onVisible = () => {
+      this.lastTickAt = this.tickNow();
       if (!document.hidden) this.draw();
     };
     document.addEventListener?.("visibilitychange", this.onVisible);
@@ -271,6 +290,8 @@ export class Office {
       });
     });
     const byKey = new Map(this.seats.map((seat) => [seat.key, seat]));
+    for (const key of this.typingBursts.keys())
+      if (!byKey.has(key)) this.typingBursts.delete(key);
     // A filter, a new role, or a status change must never leave a ghost avatar behind.
     for (const [key, visit] of this.visits) {
       const seat = byKey.get(key);
@@ -320,6 +341,7 @@ export class Office {
   }
   setMotion(value) {
     this.motion = Boolean(value);
+    this.lastTickAt = this.tickNow();
     this.draw();
   }
   setWandering(value) {
@@ -341,6 +363,75 @@ export class Office {
     this.floorPattern = this.makeTilePattern(false);
     this.roomPattern = this.makeTilePattern(true);
     this.draw();
+  }
+  tickNow() {
+    return globalThis.performance?.now?.() ?? Date.now();
+  }
+  visibleAt(y, margin = 60) {
+    if (
+      this.viewport.hidden ||
+      !this.viewport.clientWidth ||
+      !this.viewport.clientHeight
+    )
+      return false;
+    const top = this.viewport.scrollTop / this.scale;
+    return (
+      y + 10 >= top &&
+      y - margin <= top + this.viewport.clientHeight / this.scale
+    );
+  }
+  emitActivity(kind, key) {
+    if (
+      !this.motion ||
+      document.hidden ||
+      this.viewport.hidden ||
+      typeof this.onActivity !== "function"
+    )
+      return false;
+    const spacing = kind === "footstep" ? 0.18 : kind === "typing" ? 0.75 : 0;
+    if (this.time - (this.activityAt.get(kind) ?? -Infinity) < spacing)
+      return false;
+    this.activityAt.set(kind, this.time);
+    try {
+      this.onActivity({ kind, key });
+    } catch {
+      /* Optional sound must not interrupt drawing. */
+    }
+    return true;
+  }
+  typingActivity(seat, pose) {
+    if (
+      pose !== "typing" ||
+      !this.motion ||
+      document.hidden ||
+      !this.visibleAt(seat.y + 75)
+    )
+      return;
+    const burst = Math.floor((this.time + (seat.seed % 7) * 0.27) / 3.6);
+    if (this.typingBursts.get(seat.key) === burst) return;
+    this.typingBursts.set(seat.key, burst);
+    this.emitActivity("typing", seat.key);
+  }
+  updateActivities() {
+    if (!this.motion || !this.wandering) return;
+    for (const visit of this.visits.values()) {
+      const position = this.visitPosition(visit);
+      if (!visit.arrived && this.time - visit.start >= visit.travel) {
+        visit.arrived = true;
+        if (
+          position.phase === "staying" &&
+          ["coffee", "printer"].includes(visit.resource) &&
+          this.visibleAt(position.y)
+        )
+          this.emitActivity(visit.resource, visit.seat.key);
+      }
+      if (position.phase === "staying" || position.walkDistance <= 0) continue;
+      const contact = Math.floor(position.walkDistance / (WALK_STRIDE / 2));
+      if (contact === visit.lastContact) continue;
+      visit.lastContact = contact;
+      if (this.visibleAt(position.y))
+        this.emitActivity("footstep", visit.seat.key);
+    }
   }
   loadAtlas(name, src) {
     const ImageType =
@@ -1253,41 +1344,243 @@ export class Office {
       this.departureNumber[col] = number + 1;
     }
   }
-  visitPosition(visit) {
-    const elapsed = Math.max(0, this.time - visit.start);
-    let distance, phase;
-    if (elapsed < visit.travel) {
-      distance = elapsed * visit.speed;
-      phase = "outbound";
-    } else if (elapsed < visit.travel + visit.dwell) {
-      const goal = visit.route.at(-1);
-      return { ...goal, phase: "staying", direction: 0 };
-    } else {
-      distance = Math.max(
-        0,
-        visit.length - (elapsed - visit.travel - visit.dwell) * visit.speed,
-      );
-      phase = "returning";
-    }
+  routePoint(visit, distance, returning = false) {
+    let remaining = Math.max(0, Math.min(visit.length, distance));
     for (let i = 1; i < visit.route.length; i++) {
       const a = visit.route[i - 1],
         b = visit.route[i],
         segment = Math.hypot(b.x - a.x, b.y - a.y);
-      if (distance <= segment) {
-        const amount = distance / segment,
-          sign = phase === "returning" ? -1 : 1;
+      if (!segment) continue;
+      if (remaining <= segment || i === visit.route.length - 1) {
+        const amount = Math.min(1, remaining / segment),
+          sign = returning ? -1 : 1;
         return {
           x: a.x + (b.x - a.x) * amount,
           y: a.y + (b.y - a.y) * amount,
-          phase,
           direction: Math.sign(b.x - a.x) * sign,
           vertical: Math.sign(b.y - a.y) * sign,
         };
       }
-      distance -= segment;
+      remaining -= segment;
     }
-    return { ...visit.route.at(-1), phase, direction: 0 };
+    return { ...visit.route[0], direction: 0, vertical: 1 };
   }
+  walkPoint(visit, distance) {
+    const total = Math.max(0, Math.min(visit.length * 2, distance));
+    return total <= visit.length
+      ? this.routePoint(visit, total)
+      : this.routePoint(visit, visit.length * 2 - total, true);
+  }
+  visitPosition(visit) {
+    const elapsed = Math.max(0, this.time - visit.start);
+    if (elapsed < visit.travel) {
+      const distance = Math.min(visit.length, elapsed * visit.speed);
+      return {
+        ...this.routePoint(visit, distance),
+        phase: "outbound",
+        walkDistance: distance,
+      };
+    }
+    if (elapsed < visit.travel + visit.dwell)
+      return {
+        ...visit.route.at(-1),
+        phase: "staying",
+        direction: 0,
+        vertical: 0,
+        walkDistance: visit.length,
+      };
+    const distance = Math.min(
+      visit.length,
+      Math.max(0, elapsed - visit.travel - visit.dwell) * visit.speed,
+    );
+    return {
+      ...this.routePoint(visit, visit.length - distance, true),
+      phase: "returning",
+      walkDistance: visit.length + distance,
+    };
+  }
+  gait(visit, position) {
+    const distance = Math.max(0, position.walkDistance || 0),
+      phase = (distance % WALK_STRIDE) / WALK_STRIDE,
+      frame = Math.floor(phase * 4) % 4;
+    const facing =
+      position.direction < 0
+        ? "left"
+        : position.direction > 0
+          ? "right"
+          : position.vertical < 0
+            ? "back"
+            : "front";
+    const feet = [0, 1].map((index) => {
+      const offset = (index * WALK_STRIDE) / 2,
+        last =
+          Math.floor((distance - offset) / WALK_STRIDE) * WALK_STRIDE + offset,
+        progress = (distance - last) / (WALK_STRIDE / 2),
+        planted = progress < 1;
+      const side = index ? 1 : -1;
+      const anchor = (at) => {
+        const point = this.walkPoint(visit, at);
+        return {
+          x: point.x - point.vertical * side * 4,
+          y: point.y + point.direction * side * 4,
+        };
+      };
+      const from = anchor(last + WALK_STRIDE / 4);
+      if (planted) return { index, planted, x: from.x, y: from.y, lift: 0 };
+      const to = anchor(last + WALK_STRIDE + WALK_STRIDE / 4),
+        swing = Math.min(1, Math.max(0, progress - 1));
+      return {
+        index,
+        planted,
+        x: from.x + (to.x - from.x) * swing,
+        y: from.y + (to.y - from.y) * swing,
+        lift: Math.sin(swing * Math.PI) * 5,
+      };
+    });
+    return {
+      frame,
+      phase,
+      facing,
+      feet,
+      bob: -(frame % 2),
+      arm: [-2, -1, 2, 1][frame],
+    };
+  }
+  pixelLimb(x1, y1, x2, y2, width, color) {
+    const steps = Math.max(
+      1,
+      Math.ceil(Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1))),
+    );
+    for (let i = 0; i <= steps; i++)
+      this.rect(
+        x1 + ((x2 - x1) * i) / steps - width / 2,
+        y1 + ((y2 - y1) * i) / steps - width / 2,
+        width,
+        width,
+        color,
+      );
+  }
+  walkingLegs(position, gait) {
+    const [dx, dy] = WALK_VECTORS[gait.facing],
+      x = position.x,
+      y = position.y;
+    this.rect(x - 11, y + 1, 23, 3, "#253a452b");
+    const legs = [...gait.feet].sort((a, b) => a.y - b.y);
+    for (const foot of legs) {
+      const side = foot.index ? 1 : -1,
+        hipX = x - dy * side * 4,
+        hipY = y - 14 + dx * side * 2;
+      const ankleX = foot.x,
+        ankleY = foot.y - foot.lift - 2,
+        kneeX = (hipX + ankleX) / 2 + dx * (foot.planted ? 0 : 2),
+        kneeY = (hipY + ankleY) / 2 - foot.lift * 0.4;
+      if (foot.planted) this.rect(foot.x - 4, foot.y + 1, 9, 2, "#172b3a33");
+      this.pixelLimb(hipX, hipY, kneeX, kneeY, 6, "#162630");
+      this.pixelLimb(kneeX, kneeY, ankleX, ankleY, 5, "#162630");
+      this.pixelLimb(hipX, hipY, kneeX, kneeY, 4, "#30434c");
+      this.pixelLimb(kneeX, kneeY, ankleX, ankleY, 3, "#2b3c46");
+      this.rect(ankleX - 4 + dx, ankleY - 1, 8, 4, "#10202b");
+      this.rect(ankleX - 3 + dx, ankleY, 6, 1, "#4b5d64");
+    }
+  }
+  walkingTorso(seat, position, gait, carrying = false) {
+    const { x, y } = position,
+      pose =
+        gait.facing === "left"
+          ? gait.frame < 2
+            ? "walkLeftA"
+            : "walkLeftB"
+          : gait.facing === "right"
+            ? gait.frame < 2
+              ? "walkRightA"
+              : "walkRightB"
+            : gait.facing === "back"
+              ? "standBack"
+              : "standFront";
+    const leftArm = carrying && gait.facing === "left" ? 0 : -gait.arm,
+      rightArm = carrying && gait.facing !== "left" ? 0 : gait.arm;
+    const source = PEOPLE_RECTS[pose]?.[seat.appearance],
+      image = this.assets.actions?.image;
+    if (!source || !image) {
+      this.rect(x - 9, y - 29 + gait.bob, 19, 16, seat.role.color);
+      this.rect(x - 14, y - 25 + gait.bob + leftArm, 6, 10, seat.role.color);
+      this.rect(x + 9, y - 25 + gait.bob + rightArm, 6, 10, seat.role.color);
+      this.rect(
+        x - 14,
+        y - 17 + gait.bob + leftArm,
+        5,
+        5,
+        SKIN[seat.appearance % 4],
+      );
+      this.rect(
+        x + 10,
+        y - 17 + gait.bob + rightArm,
+        5,
+        5,
+        SKIN[seat.appearance % 4],
+      );
+      if (gait.facing === "back") {
+        this.rect(x - 14, y - 49 + gait.bob, 28, 23, HAIR[seat.appearance % 4]);
+        this.rect(x - 11, y - 53 + gait.bob, 22, 8, HAIR[seat.appearance % 4]);
+        this.rect(x - 5, y - 27 + gait.bob, 10, 3, "#d8e2df");
+        if (seat.appearance === 1)
+          this.rect(x + 5, y - 30 + gait.bob, 8, 13, HAIR[1]);
+      } else
+        this.head(x, y - 53 + gait.bob, seat.appearance, {
+          look: gait.facing === "left" ? -1 : 1,
+        });
+      return;
+    }
+    const [sx, sy, sw, sh] = source,
+      height = 58,
+      scale = height / sh,
+      width = sw * scale,
+      left = x - width / 2,
+      top = y - (sh - 3) * scale + gait.bob;
+    const part = (rx, ry, rw, rh, shift) =>
+      this.ctx.drawImage(
+        image,
+        sx + sw * rx,
+        sy + sh * ry,
+        sw * rw,
+        sh * rh,
+        Math.round(left + width * rx),
+        Math.round(top + height * ry + shift),
+        Math.round(width * rw),
+        Math.round(height * rh),
+      );
+    part(0, 0, 1, 0.62, 0);
+    part(0.35, 0.59, 0.3, 0.21, 0);
+    part(0, 0.59, 0.35, 0.21, leftArm);
+    part(0.65, 0.59, 0.35, 0.21, rightArm);
+  }
+  carriedProp(visit, position, gait) {
+    if (position.phase !== "returning") return;
+    const side = gait.facing === "left" ? -1 : 1,
+      x = position.x + side * 10,
+      y = position.y - 17 + gait.bob;
+    if (visit.resource === "coffee") this.cup(x - (side < 0 ? 7 : 0), y, false);
+    else if (visit.resource === "printer") {
+      this.rect(x - 5, y - 3, 12, 15, "#304a59");
+      this.rect(x - 4, y - 2, 10, 13, "#f3efdd");
+      this.rect(x - 2, y + 1, 6, 1, "#96a8af");
+      this.rect(x - 2, y + 4, 5, 1, "#b0bcb9");
+    }
+  }
+  walkingPerson(visit, position) {
+    const gait = this.gait(visit, position);
+    this.walkingLegs(position, gait);
+    if (gait.facing === "back") this.carriedProp(visit, position, gait);
+    this.walkingTorso(
+      visit.seat,
+      position,
+      gait,
+      position.phase === "returning" &&
+        ["coffee", "printer"].includes(visit.resource),
+    );
+    if (gait.facing !== "back") this.carriedProp(visit, position, gait);
+  }
+
   head(x, y, seed, { sleep = false, blink = false, look = 1 } = {}) {
     const skin = SKIN[seed % 4],
       hair = HAIR[seed % 4];
@@ -1337,6 +1630,7 @@ export class Office {
         76,
       );
     }
+    this.typingActivity(seat, pose);
     return pose;
   }
   sleepPortrait(variant, x, feet, height = 72) {
@@ -1476,24 +1770,23 @@ export class Office {
     this.text("z", x + 8, y - 9 - float, 12, "#657863", "600");
   }
   standingPerson(visit, position) {
+    if (position.phase !== "staying") {
+      this.walkingPerson(visit, position);
+      return;
+    }
     if (!this.assets.actions)
       return this.standingFallback(
         { ...visit, seat: { ...visit.seat, seed: visit.seat.appearance } },
         position,
       );
-    const { x, y, phase, direction, vertical } = position,
-      { seat } = visit;
-    const walking = phase !== "staying",
-      beat = Math.floor(this.time * 4 + (seat.seed % 3)) % 2;
-    let pose;
-    if (phase !== "outbound" && visit.resource === "printer") pose = "paper";
-    else if (phase !== "outbound" && visit.resource === "coffee")
-      pose = "coffee";
-    else if (direction)
-      pose = "walk" + (direction < 0 ? "Left" : "Right") + (beat ? "B" : "A");
-    else pose = vertical < 0 ? "standBack" : "standFront";
-    this.rect(x - 11, y + 1, 23, 3, "#253a452b");
-    this.person(pose, seat.appearance, x, y - (walking ? beat : 0), 58);
+    const pose =
+      visit.resource === "coffee"
+        ? "coffee"
+        : visit.resource === "printer"
+          ? "paper"
+          : "standFront";
+    this.rect(position.x - 11, position.y + 1, 23, 3, "#253a452b");
+    this.person(pose, visit.seat.appearance, position.x, position.y, 58);
   }
   standingFallback(visit, position) {
     const { x, y, phase, direction } = position,
@@ -1752,6 +2045,7 @@ export class Office {
     const c = this.ctx;
     if (!this.roles) return;
     this.updateLife();
+    this.updateActivities();
     const top = Math.floor(this.viewport.scrollTop / this.scale),
       height = Math.min(
         this.height,
@@ -1935,6 +2229,9 @@ export class Office {
     this.viewport.removeEventListener("scroll", this.onScroll);
     document.removeEventListener?.("visibilitychange", this.onVisible);
     this.visits.clear();
+    this.typingBursts.clear();
+    this.activityAt.clear();
+    this.onActivity = null;
     for (const image of this.assetImages) {
       image.onload = null;
       image.onerror = null;

@@ -9,6 +9,19 @@ const FALLBACK = {
   deliveryOpen: "Open completion tray",
   deliveryClose: "Close",
   deliveryViewTask: "Open task",
+  deliveryShowReply: "Show reply",
+  deliveryHideReply: "Hide reply",
+  deliveryReply: "Codex reply",
+  deliveryReplyLoading: "Loading this reply…",
+  deliveryReplyUnavailable:
+    "This completed reply is not available. Open the task to view its history.",
+  deliveryReplyUnsupported:
+    "Reply previews are available for local Codex tasks. Open the task to read this reply.",
+  deliveryReplyError: "The reply could not be loaded.",
+  deliveryReplyRetry: "Try again",
+  deliveryReplyTruncated:
+    "This reply is shortened. Open the task to read the complete response.",
+  deliveryReplyDemo: "Sample reply",
 };
 
 function identity(task) {
@@ -76,6 +89,8 @@ export function createDeliveryTracker({ limit = 30, now = Date.now } = {}) {
             sequence,
             key: ident.key,
             taskId: ident.id,
+            source: typeof task.source === "string" ? task.source : "",
+            scope: name,
             title:
               typeof task.title === "string"
                 ? task.title.slice(0, 500)
@@ -130,6 +145,7 @@ export function createDeliveryTray({
   getMotion = () => true,
   t,
   onOpenTask,
+  getReply,
   getSeats = () => [],
 }) {
   const doc = panel.ownerDocument;
@@ -140,8 +156,134 @@ export function createDeliveryTray({
     compactTimer,
     destroyed = false,
     lastRenderKey;
+  let replyVersion = 0,
+    replyGeneration = 0;
   const flights = new Set();
   const cardButtons = new Map();
+  const replyButtons = new Map(),
+    replyStates = new Map(),
+    replyRequests = new Map(),
+    expandedReplies = new Set();
+  const replyKey = (entry) =>
+    JSON.stringify([
+      entry.scope,
+      entry.source,
+      entry.taskId,
+      entry.turnId,
+      entry.id,
+    ]);
+
+  function cancelReply(key) {
+    replyRequests.get(key)?.controller.abort();
+    replyRequests.delete(key);
+    if (replyStates.get(key)?.status === "loading") replyStates.delete(key);
+  }
+  function cancelReplyReads() {
+    replyGeneration++;
+    for (const key of replyRequests.keys()) cancelReply(key);
+  }
+  function pruneReplies() {
+    const retained = new Set(
+      [...tracker.entries("live"), ...tracker.entries("demo")].map(replyKey),
+    );
+    for (const key of replyStates.keys())
+      if (!retained.has(key)) {
+        cancelReply(key);
+        replyStates.delete(key);
+        expandedReplies.delete(key);
+      }
+  }
+  function loadReply(entry, retry = false) {
+    const key = replyKey(entry);
+    if (replyRequests.has(key) || (!retry && replyStates.has(key))) return;
+    const controller = new AbortController(),
+      generation = replyGeneration;
+    const request = { controller, generation };
+    replyRequests.set(key, request);
+    replyStates.set(key, { status: "loading" });
+    replyVersion++;
+    render();
+    Promise.resolve()
+      .then(() => {
+        if (
+          controller.signal.aborted ||
+          destroyed ||
+          generation !== replyGeneration
+        )
+          return;
+        return typeof getReply === "function"
+          ? getReply({ ...entry }, { signal: controller.signal })
+          : { status: "unsupported" };
+      })
+      .then((result) => {
+        if (
+          destroyed ||
+          controller.signal.aborted ||
+          generation !== replyGeneration ||
+          replyRequests.get(key) !== request ||
+          entry.scope !== scope
+        )
+          return;
+        let state;
+        if (
+          result?.status === "available" &&
+          typeof result.text === "string" &&
+          result.taskId === entry.taskId &&
+          result.turnId === entry.turnId &&
+          (typeof entry.turnId === "string" ||
+            (entry.scope === "demo" && result.fictional === true)) &&
+          (!result.fictional || entry.scope === "demo")
+        ) {
+          state = {
+            status: "available",
+            text: result.text.slice(0, 65536),
+            truncated: Boolean(result.truncated) || result.text.length > 65536,
+            fictional: entry.scope === "demo" && result.fictional === true,
+          };
+        } else
+          state = {
+            status: ["unsupported", "unavailable", "error"].includes(
+              result?.status,
+            )
+              ? result.status
+              : "error",
+          };
+        replyStates.set(key, state);
+        replyRequests.delete(key);
+        replyVersion++;
+        render();
+      })
+      .catch((error) => {
+        if (
+          destroyed ||
+          controller.signal.aborted ||
+          generation !== replyGeneration ||
+          replyRequests.get(key) !== request
+        )
+          return;
+        replyRequests.delete(key);
+        if (error?.name === "AbortError") replyStates.delete(key);
+        else replyStates.set(key, { status: "error" });
+        replyVersion++;
+        render();
+      });
+  }
+  function toggleReply(entry) {
+    const key = replyKey(entry);
+    if (expandedReplies.has(key)) {
+      expandedReplies.delete(key);
+      cancelReply(key);
+    } else {
+      expandedReplies.add(key);
+      open = true;
+      toastId = null;
+      clearTimeout(compactTimer);
+      loadReply(entry);
+    }
+    replyVersion++;
+    render();
+    replyButtons.get(entry.id)?.focus({ preventScroll: true });
+  }
   function tr(key, values = {}) {
     const translated = typeof t === "function" ? t(key, values) : null;
     let value =
@@ -228,8 +370,8 @@ export function createDeliveryTray({
       card.append(node("p", "delivery-card-kicker", tr("deliveryLatest")));
     const title = node("button", "delivery-task-title", entry.title);
     title.type = "button";
-    title.title = tr("deliveryViewTask");
-    title.onclick = () => onOpenTask?.(entry.taskId);
+    title.title = tr("deliveryShowReply");
+    title.onclick = () => toggleReply(entry);
     if (!isRecent) cardButtons.set(entry.id, title);
     const footer = node("div", "delivery-card-footer"),
       time = node("time", "delivery-time", formatTime(entry.at)),
@@ -243,7 +385,73 @@ export function createDeliveryTray({
     acknowledgeButton.disabled = entry.acknowledged;
     acknowledgeButton.onclick = () => acknowledge(entry.id);
     footer.append(time, acknowledgeButton);
-    card.append(title, footer);
+    const key = replyKey(entry),
+      expanded = expandedReplies.has(key);
+    title.title = tr(expanded ? "deliveryHideReply" : "deliveryShowReply");
+    const actions = node("div", "delivery-card-actions"),
+      replyButton = node(
+        "button",
+        "delivery-reply-toggle",
+        tr(expanded ? "deliveryHideReply" : "deliveryShowReply"),
+      ),
+      openTaskButton = node(
+        "button",
+        "delivery-view-task",
+        tr("deliveryViewTask"),
+      ),
+      reply = node("div", "delivery-reply");
+    reply.id = `delivery-reply-${trayNumber}-${entry.sequence}-${isRecent ? "recent" : "history"}`;
+    reply.hidden = !expanded;
+    reply.setAttribute("aria-label", tr("deliveryReply"));
+    replyButton.type = openTaskButton.type = "button";
+    for (const button of [title, replyButton]) {
+      button.setAttribute("aria-controls", reply.id);
+      button.setAttribute("aria-expanded", String(expanded));
+    }
+    replyButton.onclick = () => toggleReply(entry);
+    openTaskButton.onclick = () => onOpenTask?.(entry.taskId);
+    if (!isRecent) replyButtons.set(entry.id, replyButton);
+    actions.append(replyButton, openTaskButton);
+    if (expanded) {
+      const state = replyStates.get(key) || { status: "unavailable" };
+      if (state.status === "available") {
+        // Replies can contain HTML, Markdown and code. They are always plain text.
+        if (state.fictional)
+          reply.append(
+            node("p", "delivery-reply-status", tr("deliveryReplyDemo")),
+          );
+        reply.append(node("pre", "delivery-reply-text", state.text));
+        if (state.truncated)
+          reply.append(
+            node("p", "delivery-reply-status", tr("deliveryReplyTruncated")),
+          );
+      } else {
+        const labels = {
+          loading: "deliveryReplyLoading",
+          unsupported: "deliveryReplyUnsupported",
+          unavailable: "deliveryReplyUnavailable",
+          error: "deliveryReplyError",
+        };
+        const feedback = node(
+          "p",
+          "delivery-reply-status",
+          tr(labels[state.status] || "deliveryReplyUnavailable"),
+        );
+        feedback.setAttribute("role", "status");
+        reply.append(feedback);
+        if (["unavailable", "error"].includes(state.status)) {
+          const retry = node(
+            "button",
+            "delivery-reply-retry",
+            tr("deliveryReplyRetry"),
+          );
+          retry.type = "button";
+          retry.onclick = () => loadReply(entry, true);
+          reply.append(retry);
+        }
+      }
+    }
+    card.append(title, actions, reply, footer);
     return card;
   }
   function render(force = false) {
@@ -256,11 +464,16 @@ export function createDeliveryTray({
       open,
       toastId,
       doc.documentElement.lang,
+      replyVersion,
       entries.map((entry) => [entry.id, entry.acknowledged]),
     ]);
     if (!force && signature === lastRenderKey) return;
     lastRenderKey = signature;
     root.dataset.scope = scope;
+    root.classList.toggle(
+      "is-reading",
+      entries.some((entry) => expandedReplies.has(replyKey(entry))),
+    );
     root.setAttribute("aria-label", tr("deliveryTray"));
     triggerLabel.textContent = tr("deliveryTray");
     badge.textContent = String(unread);
@@ -276,6 +489,10 @@ export function createDeliveryTray({
     empty.textContent = tr("deliveryEmpty");
     empty.hidden = entries.length > 0;
     cardButtons.clear();
+    const focusedReply = [...replyButtons].find(
+      ([, button]) => button === doc.activeElement,
+    )?.[0];
+    replyButtons.clear();
     list.replaceChildren(
       ...entries.map((entry) => {
         const item = node("li");
@@ -290,6 +507,8 @@ export function createDeliveryTray({
     recent.replaceChildren();
     recent.hidden = !current || open;
     if (current && !open) recent.append(card(current, true));
+    if (focusedReply)
+      replyButtons.get(focusedReply)?.focus({ preventScroll: true });
   }
   function setOpen(value, returnFocus = false) {
     open = value;
@@ -375,6 +594,8 @@ export function createDeliveryTray({
       if (destroyed) return [];
       const nextScope = options.scope === "demo" ? "demo" : "live";
       if (nextScope !== scope) {
+        cancelReplyReads();
+        expandedReplies.clear();
         scope = nextScope;
         open = false;
         toastId = null;
@@ -382,6 +603,7 @@ export function createDeliveryTray({
         clearFlights();
       }
       const created = tracker.observe(tasks, { scope });
+      pruneReplies();
       if (created.length) {
         toastId = created.at(-1).id;
         clearTimeout(compactTimer);
@@ -399,6 +621,9 @@ export function createDeliveryTray({
     destroy() {
       if (destroyed) return;
       destroyed = true;
+      cancelReplyReads();
+      replyStates.clear();
+      expandedReplies.clear();
       clearTimeout(compactTimer);
       clearFlights();
       root.removeEventListener("keydown", onKeyDown);

@@ -1,4 +1,8 @@
 import { Office } from "./office.js";
+import { OfficeSound } from "./sound.js";
+import { SOUND_CHOICES } from "./sound-catalog.js";
+import { createCodexControls } from "./controls.js";
+import { createConnectionGuide } from "./connection-guide.js";
 import { assignRoles, DEFAULT_ROLES } from "./roles.mjs";
 import {
   LANGUAGES,
@@ -25,6 +29,7 @@ const settings = {
   sound: prefs.sound === true,
   motion: prefs.motion ?? !reduced.matches,
   walking: prefs.walking === true,
+  officeSounds: prefs.officeSounds !== false,
   volume: Math.min(
     1,
     Math.max(0, Number.isFinite(prefs.volume) ? prefs.volume : 0.25),
@@ -62,15 +67,16 @@ let state = { tasks: [], roles: DEFAULT_ROLES, health: {} },
   previous = new Map(),
   connected = false,
   initial = true,
-  audioCtx = null,
   source;
 const publicDemo = document.documentElement.dataset.mode === "demo";
+const soundscape = new OfficeSound();
 const office = new Office({
   canvas: $("#office-canvas"),
   overlay: $("#seat-overlay"),
   world: $("#office-world"),
   viewport: $("#office-viewport"),
   onSelect: selectTask,
+  onActivity: (event) => soundscape.officeEvent(event),
 });
 function refreshBadges() {
   const badges = [
@@ -96,10 +102,84 @@ const delivery = createDeliveryTray({
   getMotion: () => settings.motion,
   t,
   getSeats: () => office.seats,
+  getReply: async (entry, { signal }) => {
+    if (entry.scope === "demo" && entry.taskId.startsWith("demo-"))
+      return {
+        status: "available",
+        taskId: entry.taskId,
+        turnId: entry.turnId,
+        text: t("demoReplyText", { task: entry.title }),
+        truncated: false,
+        fictional: true,
+      };
+    if (entry.source !== "codex") return { status: "unsupported" };
+    if (!entry.turnId) return { status: "unavailable" };
+    const query = new URLSearchParams({
+      taskId: entry.taskId,
+      turnId: entry.turnId,
+    });
+    const response = await fetch(`/api/reply?${query}`, {
+      signal,
+      cache: "no-store",
+    });
+    if (!response.ok) throw Error("Reply unavailable");
+    return response.json();
+  },
   onOpenTask: async (id) => {
     await focusView.exit();
     selectTask(id);
   },
+});
+const controls = createCodexControls({
+  t,
+  getView: () => ({ tasks, selected, demo, control: state.control }),
+  onSubmitted: (result, text, previousTask) => {
+    selected = result.taskId;
+    const started = {
+      ...(previousTask || {}),
+      id: result.taskId,
+      turnId: result.turnId,
+      title: previousTask?.title || text.split("\n")[0].slice(0, 120),
+      status: "working",
+      source: "codex",
+      updatedAt: result.acceptedAt || new Date().toISOString(),
+    };
+    applyState({
+      ...state,
+      tasks: [
+        ...state.tasks.filter((task) => task.id !== result.taskId),
+        started,
+      ],
+    });
+    if (["completed", "failed", "interrupted"].includes(result.status))
+      applyState({
+        ...state,
+        tasks: state.tasks.map((task) =>
+          task.id === result.taskId
+            ? {
+                ...task,
+                status:
+                  result.status === "completed"
+                    ? "done"
+                    : result.status === "failed"
+                      ? "error"
+                      : "idle",
+              }
+            : task,
+        ),
+      });
+    toast(t("commandSent"));
+  },
+});
+const connectionGuide = createConnectionGuide({
+  t,
+  getLocale,
+  getContext: () => ({
+    demo,
+    local: state.health,
+    cloud: state.cloud,
+    port: location.port,
+  }),
 });
 function persist() {
   try {
@@ -115,41 +195,19 @@ function toast(message) {
   toast.timer = setTimeout(() => ($("#toast").hidden = true), 3500);
 }
 function audioReady() {
-  try {
-    audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === "suspended") audioCtx.resume();
-    return audioCtx;
-  } catch {
-    return null;
-  }
+  return soundscape.unlock();
 }
-function sound(kind, force = false) {
-  if (!force && (!settings.sound || !audioCtx || audioCtx.state !== "running"))
-    return;
-  const ctx = force ? audioReady() : audioCtx;
-  if (!ctx) return;
-  const notes =
-      kind === "done"
-        ? [523.25, 659.25, 783.99]
-        : kind === "waiting"
-          ? [587.33, 440]
-          : [392, 523.25],
-    now = ctx.currentTime;
-  notes.forEach((frequency, i) => {
-    const osc = ctx.createOscillator(),
-      gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = frequency;
-    gain.gain.setValueAtTime(0, now + i * 0.095);
-    gain.gain.linearRampToValueAtTime(
-      settings.volume * 0.17,
-      now + i * 0.095 + 0.012,
-    );
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.095 + 0.22);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now + i * 0.095);
-    osc.stop(now + i * 0.095 + 0.23);
+function sound(kind) {
+  return soundscape.notify(kind);
+}
+function syncAudio() {
+  soundscape.configure({
+    enabled: settings.sound,
+    volume: settings.volume,
+    office: settings.officeSounds,
+    motion: settings.motion,
+    scene: !$("#office-viewport").hidden,
+    working: filteredTasks().some((task) => task.status === "working"),
   });
 }
 function settingsUI() {
@@ -160,6 +218,7 @@ function settingsUI() {
     `${t("motion")} ${t(settings.motion ? "on" : "off")}`;
   $("#motion-toggle").setAttribute("aria-pressed", settings.motion);
   $("#sound-setting").checked = settings.sound;
+  $("#office-sounds-setting").checked = settings.officeSounds;
   $("#motion-setting").checked = settings.motion;
   $("#volume-setting").value = Math.round(settings.volume * 100);
   if ($("#walking-setting")) $("#walking-setting").checked = settings.walking;
@@ -176,15 +235,13 @@ function settingsUI() {
   document.documentElement.dataset.theme = theme;
   $("#theme-toggle").textContent = theme === "light" ? "☾" : "☀";
   office.setTheme(theme);
+  syncAudio();
 }
-function setSound(value) {
+async function setSound(value) {
   settings.sound = value;
-  if (value) {
-    audioReady();
-    sound("done", true);
-  }
   persist();
   settingsUI();
+  if (value && (await audioReady()) && settings.sound) void sound("enabled");
 }
 function setMotion(value) {
   settings.motion = value;
@@ -308,6 +365,16 @@ function localize() {
   $("#volume-setting").previousElementSibling.textContent = t("volume");
   attr("#volume-setting", "aria-label", "volume");
   text("#test-sound", "testSound");
+  text("#office-sounds-label", "officeSounds");
+  text("#office-sounds-help", "officeSoundsHelp");
+  attr("#office-sounds-setting", "aria-label", "officeSounds");
+  attr("#sound-preview", "aria-label", "soundPreview");
+  const preview = $("#sound-preview"),
+    chosenSound = preview.value || "success";
+  preview.replaceChildren(
+    ...SOUND_CHOICES.map((key) => new Option(t(`sound.${key}`), key)),
+  );
+  preview.value = chosenSound;
   const motionRow = $("#motion-setting").closest(".setting-row");
   motionRow.querySelector("strong").textContent = t("motion");
   motionRow.querySelector("p").textContent = t("motionHelp");
@@ -333,6 +400,11 @@ function localize() {
   attr("#role-keywords", "placeholder", "roleKeywordsPlaceholder");
   text("#role-form .settings-help", "roleHelp");
   text("#role-form .primary-button", "roleCreate");
+  controls.refreshText();
+  connectionGuide.refreshText();
+  text("#connection-guide-open", "connectionGuide");
+  attr("#connection", "aria-label", "connectionGuide");
+  attr("#connection", "title", "connectionGuide");
   settingsUI();
 }
 function roleList() {
@@ -344,7 +416,9 @@ function roleList() {
   ];
 }
 function applyState(next) {
-  delivery.observe(next.tasks || [], { scope: demo ? "demo" : "live" });
+  const completed = delivery.observe(next.tasks || [], {
+    scope: demo ? "demo" : "live",
+  });
   state = next;
   roles = roleList();
   tasks = (next.tasks || [])
@@ -369,10 +443,11 @@ function applyState(next) {
           previous.has(task.id) && previous.get(task.id) !== task.status,
       ),
       notice =
+        changes.find((task) => task.status === "error") ||
         changes.find((task) => task.status === "waiting") ||
-        changes.find((task) => task.status === "done") ||
         changes.find((task) => task.status === "working");
-    if (notice) sound(notice.status);
+    if (completed.length) void sound("done");
+    else if (notice) void sound(notice.status);
   }
   previous = new Map(tasks.map((task) => [task.id, task.status]));
   initial = false;
@@ -504,6 +579,7 @@ function render() {
   }
   renderTable(visible);
   renderDetails();
+  syncAudio();
 }
 function makeStatus(status) {
   const node = document.createElement("span");
@@ -575,6 +651,7 @@ function selectTask(id) {
     });
 }
 function renderDetails() {
+  controls.refreshTask();
   const task = tasks.find((task) => task.id === selected),
     root = $("#task-details"),
     locale = getLocale();
@@ -830,6 +907,7 @@ function setView(list) {
   $("#list-view").classList.toggle("active", list);
   $("#list-view").setAttribute("aria-pressed", list);
   if (!list) office.fit();
+  syncAudio();
 }
 $("#office-view").onclick = () => setView(false);
 $("#list-view").onclick = () => setView(true);
@@ -840,8 +918,14 @@ $("#motion-setting").onchange = (event) => setMotion(event.target.checked);
 $("#volume-setting").oninput = (event) => {
   settings.volume = Number(event.target.value) / 100;
   persist();
+  syncAudio();
 };
-$("#test-sound").onclick = () => sound("done", true);
+$("#test-sound").onclick = () => soundscape.preview($("#sound-preview").value);
+$("#office-sounds-setting").onchange = (event) => {
+  settings.officeSounds = event.target.checked;
+  persist();
+  syncAudio();
+};
 $("#language-quick").onchange = (event) => language(event.target.value);
 $("#language-setting").onchange = (event) => language(event.target.value);
 $("#theme-setting").onchange = (event) => setTheme(event.target.value);
@@ -857,6 +941,11 @@ $("#walking-setting")?.addEventListener("change", (event) => {
 $("#settings-open").onclick = () => {
   $("#settings-dialog").showModal();
   settingsUI();
+};
+$("#connection").onclick = () => connectionGuide.open();
+$("#connection-guide-open").onclick = () => {
+  $("#settings-dialog").close();
+  connectionGuide.open();
 };
 $("#settings-dialog").addEventListener("close", () => {
   $("#pair-area").hidden = true;
@@ -973,8 +1062,16 @@ reduced.addEventListener("change", (event) => {
   if (event.matches) setMotion(false);
 });
 darkSystem.addEventListener("change", () => settingsUI());
+document.addEventListener("visibilitychange", syncAudio);
 document.addEventListener(
   "pointerdown",
+  () => {
+    if (settings.sound) audioReady();
+  },
+  { once: true },
+);
+document.addEventListener(
+  "keydown",
   () => {
     if (settings.sound) audioReady();
   },

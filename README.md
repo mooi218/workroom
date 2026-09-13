@@ -79,6 +79,29 @@ The observer sends the title, conversation URL, and visible state to the local o
 
 See the [extension guide](extension/README.md) for its supported URL formats, permissions, and observation rules.
 
+## Usage, instructions, and completed replies
+
+The **Codex usage** card reads your signed-in account's reported limits once a minute. Pro shows the 7-day window; Plus shows the 5-hour and 7-day windows. Missing values stay unavailable.
+
+Choose a completed or idle local task and use **Continue this task**, or choose **New task** and a work folder. Sending starts real Codex work and uses your normal allowance. Workroom uses the installed Codex CLI and the account already signed in there. Workroom restricts these turns to the selected work folder with network access disabled. Running tasks, approvals, and work requiring additional access should be continued in Codex.
+
+Open a completion tray entry to read the final assistant response from that exact turn. Replies are fetched only when opened, displayed as plain text, and shortened at 64 KiB. The tray does not substitute a newer reply for an older completed turn. Replies produced by Workroom's own running Codex connection are also kept in bounded memory until that server stops.
+
+Use the connection status button or **Settings → Connection guide** for the walkthrough. The full guide is available in [English](CONNECTION.md) and [Japanese](CONNECTION.ja.md).
+
+## Office sounds
+
+Walking has four directions and four foot phases, tied to distance rather than a sliding standing pose. Footsteps, keyboard bursts, coffee, and printing follow the office animation. The completion sound follows a newly completed response. Sound starts off; office sounds can also be switched off separately from notifications. Settings include a sound preview selector.
+
+The public app includes generated sound effects. To use supported recordings you have downloaded separately:
+
+```sh
+npm run import:sounds -- "/path/to/your/soundeffect"
+npm start
+```
+
+With a custom data directory, pass its `sounds` directory as the second import argument. Imported recordings remain local and are not included in the repository, public demo, or release ZIP. See [sound sources and import filenames](SOUNDS.md).
+
 ## Local settings and data
 
 The default source is `CODEX_HOME`, or your home directory’s `.codex` folder when that variable is unset. To choose locations or a port:
@@ -90,7 +113,7 @@ node server.mjs --codex-home /path/to/.codex --port 4318 --data-dir /path/to/wor
 - The server listens on `127.0.0.1` only. Keep it on this computer; do not expose it to a network.
 - Pairing data is stored in `.workroom/` in the launch folder by default. Keep the pairing code private. The extension uses port **4318**, so retain that port when using it.
 - Appearance, language, sound, custom roles, and manual assignments are saved in the browser. Cloud observations stay in server memory and must be observed again after a restart.
-- The local adapter extracts task metadata and limited activity details. It does not send conversation bodies, reasoning, tool arguments, or tool output to the browser. It does not read OpenAI authentication files.
+- The local adapter extracts task metadata and limited activity details. A completed assistant reply is read only when its tray entry is opened; prompts, reasoning, tool arguments and tool output are not returned. Reply text is never included in live status broadcasts. Authentication remains handled by the installed Codex CLI; Workroom does not copy credentials into the browser.
 - Real task records, pairing data, and private screenshots do not belong in the public repository. Use the demo for screenshots and invented examples for reports.
 
 > **Usage note:** Workroom’s display, classification, synchronization, and effects do not consume AI credits. Running your Codex or Work tasks still uses their normal allowance; the app uses local computer resources.

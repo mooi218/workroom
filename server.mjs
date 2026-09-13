@@ -1,13 +1,15 @@
 import http from "node:http";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, access } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import os from "node:os";
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes, timingSafeEqual, randomUUID, createHash } from "node:crypto";
 import { demoSnapshot } from "./lib/demo.mjs";
 import { DEFAULT_ROLES } from "./lib/roles.mjs";
 import { CloudStore } from "./lib/cloud-store.mjs";
 import { spawn } from "node:child_process";
+import { SOUND_TRACKS } from "./public/sound-catalog.js";
+import { createCodexControl } from "./lib/codex-control.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const mime = {
@@ -23,10 +25,22 @@ export async function createWorkroom({
   port = 4318,
   codexHome = process.env.CODEX_HOME || path.join(os.homedir(), ".codex"),
   dataDir = path.join(process.cwd(), ".workroom"),
+  soundDir = path.join(dataDir, "sounds"),
   demo = false,
   source: providedSource,
+  control: providedControl,
 } = {}) {
   await mkdir(dataDir, { recursive: true });
+  const soundFiles = new Map();
+  const availableSounds = [];
+  for (const [name, track] of Object.entries(SOUND_TRACKS)) {
+    const file = path.join(soundDir, track.file);
+    try {
+      await access(file);
+      soundFiles.set(`/sounds/${track.file}`, file);
+      availableSounds.push(name);
+    } catch {}
+  }
   let pairToken;
   try {
     pairToken = (
@@ -65,6 +79,33 @@ export async function createWorkroom({
     demo,
   };
   const clients = new Set();
+  let control = providedControl;
+  const instructionRequests = new Map(), ownedTasks = new Map();
+  const controlStatus = value => value === "completed" ? "done" : value === "failed" ? "error" : value === "interrupted" ? "idle" : ["inProgress", "starting"].includes(value) ? "working" : "unknown";
+  function ensureControl() {
+    return control ??= createCodexControl({ codexHome,
+      getTaskState: id => snapshot.tasks.find(task => task.id === id)?.status,
+      onEvent: event => {
+        const task = ownedTasks.get(event.taskId);
+        if (task && (!task.turnId || task.turnId === event.turnId)) {
+          if (event.status) task.status = controlStatus(event.status);
+          else if (event.type === "handoff") task.status = "unknown";
+          task.updatedAt = task.observedAt = new Date().toISOString();
+        }
+      },
+    });
+  }
+  function mergeOwned(localTasks) {
+    const result = new Map(localTasks.map(task => [task.id, task]));
+    for (const [id, own] of ownedTasks) {
+      const local = result.get(id);
+      if (local?.turnId === own.turnId) own.sourceCaught = true;
+      if (own.sourceCaught && local?.turnId && local.turnId !== own.turnId) { ownedTasks.delete(id); continue; }
+      const { sourceCaught, ...metadata } = own;
+      result.set(id, { ...local, ...metadata });
+    }
+    return [...result.values()];
+  }
   let busy = false,
     closed = false;
   async function refresh() {
@@ -76,7 +117,7 @@ export async function createWorkroom({
           ? { tasks: [], health: { status: "demo", taskCount: 0 } }
           : cloud.snapshot();
       snapshot = {
-        tasks: [...local.tasks, ...remote.tasks],
+        tasks: [...mergeOwned(local.tasks), ...remote.tasks],
         roles: DEFAULT_ROLES,
         health: local.health,
         cloud: remote.health,
@@ -96,6 +137,11 @@ export async function createWorkroom({
     } finally {
       busy = false;
     }
+    const currentControl = control?.getState?.();
+    snapshot.control = currentControl ? {
+      running: currentControl.running,
+      handoffs: (currentControl.events || []).filter(event => event.type === "handoff" && snapshot.tasks.find(task => task.id === event.taskId)?.status !== "done").slice(-5),
+    } : { running: [], handoffs: [] };
     const encoded = `data: ${JSON.stringify(snapshot)}\n\n`;
     for (const client of clients) {
       if (client.writableLength > 1024 * 1024) {
@@ -193,8 +239,95 @@ export async function createWorkroom({
     }
     if (!sameOrigin || req.headers["sec-fetch-site"] === "cross-site")
       return send(res, 403, { error: "Same origin required" });
+    if (url.pathname === "/api/instructions") {
+      if (demo) return send(res, 403, { error: "demo" });
+      if (req.method !== "POST") return send(res, 405, { error: "POST required" });
+      if (origin !== `http://${req.headers.host}` || req.headers["x-workroom-action"] !== "instruction")
+        return send(res, 403, { error: "Explicit same-origin action required" });
+      if (!String(req.headers["content-type"] || "").startsWith("application/json")) return send(res, 415, { error: "JSON required" });
+      let input, bytes = 0;
+      const body = [];
+      try {
+        for await (const chunk of req) {
+          bytes += chunk.length;
+          if (bytes > 40 * 1024) { send(res, 413, { error: "too_large" }); req.destroy(); return; }
+          body.push(chunk);
+        }
+        input = JSON.parse(Buffer.concat(body).toString("utf8"));
+      } catch { return send(res, 400, { error: "invalid" }); }
+      if (!input || typeof input !== "object" || Array.isArray(input) || Object.keys(input).some(key => !["text", "taskId", "projectTaskId", "requestId"].includes(key)) || typeof input.text !== "string" || !input.text.trim() || input.text.length > 8000 || Buffer.byteLength(input.text, "utf8") > 32768 || input.text.includes("\0") || typeof input.requestId !== "string" || !/^[a-f0-9-]{36}$/i.test(input.requestId))
+        return send(res, 400, { error: "invalid" });
+      const fingerprint = createHash("sha256").update(JSON.stringify([input.text, input.taskId, input.projectTaskId])).digest("hex");
+      const existing = instructionRequests.get(input.requestId);
+      if (existing) {
+        if (existing.fingerprint !== fingerprint) return send(res, 409, { error: "request_mismatch" });
+        const saved = await existing.result; return send(res, saved.status, saved.body);
+      }
+      const target = input.taskId ? snapshot.tasks.find(task => task.id === input.taskId && task.source === "codex") : null;
+      const projectTask = input.projectTaskId ? snapshot.tasks.find(task => task.id === input.projectTaskId && task.source === "codex") : null;
+      if ((input.taskId && !target) || (input.projectTaskId && !projectTask) || (input.taskId && input.projectTaskId)) return send(res, 400, { error: "invalid_task" });
+      if (target && !["done", "idle", "error"].includes(target.status)) return send(res, 409, { error: "busy" });
+      if (instructionRequests.size >= 256) return send(res, 429, { error: "session_limit" });
+      const result = (async () => {
+        try {
+          const params = { text: input.text.trim() };
+          if (target) params.taskId = target.id;
+          else if (projectTask) params.projectTaskId = projectTask.id;
+          else {
+            params.cwd = path.join(dataDir, "jobs", randomUUID());
+            await mkdir(params.cwd, { recursive: true });
+          }
+          const accepted = await ensureControl().sendInstruction(params);
+          const baseTask = target || projectTask;
+          ownedTasks.set(accepted.taskId, {
+            id: accepted.taskId, turnId: accepted.turnId, source: "codex",
+            title: target?.title || params.text.split(/\r?\n/)[0].slice(0, 120),
+            status: controlStatus(accepted.status),
+            projectKey: baseTask?.projectKey || `workroom:${accepted.taskId}`,
+            projectName: baseTask?.projectName || params.text.split(/\r?\n/)[0].slice(0, 80),
+            projectKind: baseTask?.projectKind || "task-group",
+            updatedAt: accepted.acceptedAt, observedAt: accepted.acceptedAt,
+          });
+          if (ownedTasks.size > 128) for (const [key, value] of ownedTasks) if (key !== accepted.taskId && value.status !== "working") { ownedTasks.delete(key); break; }
+          return { status: 200, body: accepted };
+        } catch (error) {
+          return { status: ["TASK_BUSY", "TASK_HANDOFF_REQUIRED"].includes(error.code) ? 409 : 503,
+            body: { error: ["TASK_BUSY", "TASK_HANDOFF_REQUIRED"].includes(error.code) ? "busy" : error.outcomeUnknown ? "outcome_unknown" : "unavailable", code: error.code || "CODEX_UNAVAILABLE" } };
+        }
+      })();
+      instructionRequests.set(input.requestId, { fingerprint, result });
+      const outcome = await result;
+      if (outcome.status !== 200 && outcome.body.error !== "outcome_unknown") instructionRequests.delete(input.requestId);
+      return send(res, outcome.status, outcome.body);
+    }
     if (req.method !== "GET") return send(res, 405, { error: "GET required" });
+    if (url.pathname === "/api/usage") {
+      if (demo) return send(res, 200, { status: "demo", windows: [] });
+      try { return send(res, 200, await ensureControl().getAccountUsage()); }
+      catch { return send(res, 503, { status: "unavailable", windows: [] }); }
+    }
+    if (url.pathname === "/sound-manifest.json")
+      return send(res, 200, { available: availableSounds });
+    if (soundFiles.has(url.pathname)) {
+      try {
+        const data = await readFile(soundFiles.get(url.pathname));
+        res.writeHead(200, { "Content-Type": "audio/mpeg", "Cache-Control": "private, max-age=3600" });
+        return res.end(data);
+      } catch { return send(res, 404, { error: "Sound unavailable" }); }
+    }
     if (url.pathname === "/api/state") return send(res, 200, snapshot);
+    if (url.pathname === "/api/reply") {
+      const taskId = url.searchParams.get("taskId"), turnId = url.searchParams.get("turnId");
+      if (![taskId, turnId].every(value => typeof value === "string" && /^[A-Za-z0-9_-]{1,200}$/.test(value)))
+        return send(res, 400, { status: "unavailable", reason: "exact_turn_required" });
+      try {
+        const reply = source?.getReply ? await source.getReply(taskId, { turnId }) : { status: "unsupported" };
+        if (reply.status === "available") return send(res, 200, reply);
+        const owned = await control?.getReply?.(taskId, { turnId });
+        return send(res, 200, owned?.status === "available" ? owned : reply);
+      }
+      catch { return send(res, 500, { status: "error", reason: "read_failed" }); }
+    }
     if (url.pathname === "/api/demo")
       return send(res, 200, {
         ...demoSnapshot(),
@@ -223,6 +356,12 @@ export async function createWorkroom({
       "/index.html": "public/index.html",
       "/app.js": "public/app.js",
       "/office.js": "public/office.js",
+      "/sound.js": "public/sound.js",
+      "/sound-catalog.js": "public/sound-catalog.js",
+      "/features-i18n.js": "public/features-i18n.js",
+      "/controls.js": "public/controls.js",
+      "/connection-guide.js": "public/connection-guide.js",
+      "/connection-guide.css": "public/connection-guide.css",
       "/projects.js": "public/projects.js",
       "/delivery.js": "public/delivery.js",
       "/focus.js": "public/focus.js",
@@ -277,6 +416,7 @@ export async function createWorkroom({
       clearInterval(interval);
       for (const client of clients) client.end();
       source?.close?.();
+      await control?.close?.();
       await new Promise((resolve) => server.close(resolve));
     },
   };

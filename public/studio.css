@@ -1019,3 +1019,122 @@ h2 {
     display: none;
   }
 }
+
+.sound-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block: 12px 22px;
+}
+.sound-preview-row select {
+  min-width: 0;
+  flex: 1 1 150px;
+  padding: 8px 10px;
+  color: var(--text);
+  background: var(--white);
+  border: 2px solid var(--line);
+  font: inherit;
+}
+.sound-preview-row button {
+  flex: 0 0 auto;
+}
+
+.usage-panel,
+.command-panel {
+  min-width: 0;
+  padding: 14px;
+  background: var(--white);
+}
+.usage-panel h2,
+.command-panel h2 {
+  font-size: 15px;
+}
+#usage-plan {
+  margin-inline-start: auto;
+  font-size: 11px;
+  color: var(--muted);
+}
+#usage-refresh {
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0;
+}
+#usage-message:empty {
+  display: none;
+}
+#usage-message,
+#command-context,
+#command-handoff {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.usage-window {
+  padding-top: 12px;
+}
+.usage-window-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+.usage-window-heading strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.usage-window meter {
+  display: block;
+  width: 100%;
+  height: 16px;
+  margin-block: 4px;
+}
+.usage-window small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.command-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+.command-actions button {
+  white-space: normal;
+  font-size: 12px;
+}
+#command-dialog {
+  width: min(620px, calc(100vw - 28px));
+}
+#command-form {
+  padding: 6px;
+}
+.command-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-block: 16px;
+  min-width: 0;
+}
+.command-field select,
+.command-field textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 2px solid var(--line);
+  background: var(--white);
+  color: var(--text);
+  font: inherit;
+}
+.command-field textarea {
+  resize: vertical;
+  min-height: 150px;
+}
+#command-feedback {
+  font-size: 13px;
+  line-height: 1.6;
+}
+#command-target {
+  overflow-wrap: anywhere;
+}

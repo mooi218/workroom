@@ -1,3 +1,4 @@
+import { FEATURE_TRANSLATIONS } from "./features-i18n.js";
 export const LANGUAGES = [
   {
     code: "ja",
@@ -1292,6 +1293,9 @@ export const TRANSLATIONS = {
     clockGreeting: "لننجز عملًا جيدًا اليوم.",
   },
 };
+
+for (const [language, values] of Object.entries(FEATURE_TRANSLATIONS))
+  Object.assign(TRANSLATIONS[language], values);
 
 // Keep these IDs aligned with lib/roles.mjs. No browser or server dependency is
 // needed here, so this module can also be validated directly with Node.
