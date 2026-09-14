@@ -16,6 +16,8 @@ export const DEMO_ASSETS = [
   "controls.js",
   "connection-guide.js",
   "connection-guide.css",
+  "work-selection.js",
+  "work-selection.css",
   "i18n.js",
   "projects.js",
   "delivery.js",
@@ -95,6 +97,10 @@ export async function buildDemo(output = path.join(root, "docs")) {
     path.join(root, "lib", "roles.mjs"),
     path.join(output, "roles.mjs"),
   );
+  await copyFile(
+    path.join(root, "lib", "selection-model.mjs"),
+    path.join(output, "selection-model.mjs"),
+  );
   const snapshot = demoSnapshot(),
     time = "2026-01-01T12:00:00.000Z";
   snapshot.tasks = snapshot.tasks.map((task, i) => ({
@@ -124,7 +130,7 @@ export async function buildDemo(output = path.join(root, "docs")) {
   await writeFile(path.join(output, ".nojekyll"), "");
   return {
     output,
-    files: DEMO_ASSETS.length + 4,
+    files: DEMO_ASSETS.length + 6,
     tasks: snapshot.tasks.length,
   };
 }

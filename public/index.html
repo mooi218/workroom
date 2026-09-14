@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/delivery.css" />
     <link rel="stylesheet" href="/pixel-ui.css" />
     <link rel="stylesheet" href="/connection-guide.css" />
+    <link rel="stylesheet" href="/work-selection.css" />
   </head>
   <body>
     <header class="app-header">
@@ -77,12 +78,13 @@
             ><button id="list-view" aria-pressed="false">☷ 仕事一覧</button>
           </div>
           <div class="project-picker">
-            <label class="select-wrap"
-              ><span class="sr-only">プロジェクト</span
-              ><select id="project-filter">
-                <option value="">すべてのプロジェクト</option>
-              </select></label
+            <button
+              id="work-picker-open"
+              class="quiet-button work-picker-trigger"
+              type="button"
             >
+              すべての仕事
+            </button>
             <button
               id="project-help-open"
               class="project-info-button"

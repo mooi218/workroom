@@ -43,12 +43,22 @@ Use this mode to explore the office, test sounds, or share screenshots. It does 
 - **Collect finished responses.** The delivery tray highlights newly completed responses and links back to their tasks. Older completions are not flagged as new deliveries. Each delivery marks the latest response finishing; the overall project may still be in progress.
 - **Organize by role.** Start with engineering, design, public relations, sales, editorial, research, planning, and operations. Add custom roles and keywords, or assign a task manually. Rooms and desks expand with the work; there is no fixed four-seat limit.
 - **Follow activity across departments.** One task can appear in several departments when its current turn contains several kinds of recorded activity. Task and seat counts are displayed separately.
-- **Find the right project.** Filter by project, department, or state. Task and project groups use readable names to keep the office easy to scan.
+- **Choose the work to follow.** Select several jobs across projects, with group checkboxes for selecting current members together. Narrow the selected work by department or status.
 - **Choose your atmosphere.** A navy pixel-studio look, readable typography, light mode, graphite dark in gray and black, and green dark give the office its own character. You can also follow your device’s appearance setting.
 - **Add a little life.** Sounds, animations, and leaving the desk have separate controls. Sound and leaving the desk start off; volume is adjustable. Reduced-motion preferences are respected.
 - **Pick your language.** The first visit follows a supported browser language, with English as the fallback. Switch between English, Japanese, Simplified Chinese, Spanish, Portuguese, French, Hindi, and Arabic; your saved choice takes priority. Task content and custom role names retain their original language.
 
 Coffee, printing, sofa breaks, and sleeping are playful office effects. They do not report actual tool actions. Task bubbles and status indicators remain at their original desks, and turning animations off stops all movement.
+
+## Keep your chosen work on screen
+
+1. Open **All work** above the office and choose **Selected work only**.
+2. Check individual jobs or use a group checkbox, then choose **Show selected work**. Search finds job and group names.
+3. Choose the status filter you want, such as active work or all statuses.
+
+The desktop app saves the chosen job identities and status filter in its local data directory. They return after a restart, including when the office is opened from the desktop shortcut or another browser on the same PC. Temporarily unavailable jobs keep their selection; clearing every checkbox intentionally shows no jobs. **All work** includes new jobs automatically. Group checkboxes select the jobs currently in that group.
+
+Office desks, counts, and completion notices follow the chosen jobs. The online and local sample demos keep their own selection separately, so trying the demo does not replace the real office's saved choices.
 
 ## Coverage and task states
 
@@ -111,7 +121,7 @@ node server.mjs --codex-home /path/to/.codex --port 4318 --data-dir /path/to/wor
 ```
 
 - The server listens on `127.0.0.1` only. Keep it on this computer; do not expose it to a network.
-- Pairing data is stored in `.workroom/` in the launch folder by default. Keep the pairing code private. The extension uses port **4318**, so retain that port when using it.
+- Pairing data, imported sounds, saved display choices, and newly created work folders are stored in `.workroom/` in the launch folder by default. **Keep this folder when updating Workroom.** Keep the pairing code private. The extension uses port **4318**, so retain that port when using it.
 - Appearance, language, sound, custom roles, and manual assignments are saved in the browser. Cloud observations stay in server memory and must be observed again after a restart.
 - The local adapter extracts task metadata and limited activity details. A completed assistant reply is read only when its tray entry is opened; prompts, reasoning, tool arguments and tool output are not returned. Reply text is never included in live status broadcasts. Authentication remains handled by the installed Codex CLI; Workroom does not copy credentials into the browser.
 - Real task records, pairing data, and private screenshots do not belong in the public repository. Use the demo for screenshots and invented examples for reports.

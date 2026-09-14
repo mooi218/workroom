@@ -147,6 +147,7 @@ export function createDeliveryTray({
   onOpenTask,
   getReply,
   getSeats = () => [],
+  includeEntry = () => true,
 }) {
   const doc = panel.ownerDocument;
   const tracker = createDeliveryTracker();
@@ -456,7 +457,7 @@ export function createDeliveryTray({
   }
   function render(force = false) {
     if (destroyed) return;
-    const entries = tracker.entries(scope),
+    const entries = tracker.entries(scope).filter(includeEntry),
       unread = entries.filter((entry) => !entry.acknowledged).length;
     syncMotion();
     const signature = JSON.stringify([

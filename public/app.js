@@ -3,6 +3,7 @@ import { OfficeSound } from "./sound.js";
 import { SOUND_CHOICES } from "./sound-catalog.js";
 import { createCodexControls } from "./controls.js";
 import { createConnectionGuide } from "./connection-guide.js";
+import { createWorkSelection } from "./work-selection.js";
 import { assignRoles, DEFAULT_ROLES } from "./roles.mjs";
 import {
   LANGUAGES,
@@ -12,7 +13,7 @@ import {
   t,
   roleName,
 } from "./i18n.js";
-import { projectKey, projectName, groupWork } from "./projects.js";
+import { projectKey, projectName } from "./projects.js";
 import { createDeliveryTray } from "./delivery.js";
 import { createFocusView } from "./focus.js";
 const $ = (selector) => document.querySelector(selector),
@@ -60,7 +61,6 @@ let state = { tasks: [], roles: DEFAULT_ROLES, health: {} },
   roles = DEFAULT_ROLES,
   selected = null,
   selectedRole = "",
-  project = "",
   filterStatus = "working",
   demo = false,
   liveState = null,
@@ -69,6 +69,27 @@ let state = { tasks: [], roles: DEFAULT_ROLES, health: {} },
   initial = true,
   source;
 const publicDemo = document.documentElement.dataset.mode === "demo";
+let displayIdentity = "";
+const workPicker = createWorkSelection({
+  button: $("#work-picker-open"),
+  getTasks: () => tasks,
+  t,
+  onChange: (selection) => {
+    const identity = JSON.stringify([selection.mode, selection.taskKeys]);
+    if (identity !== displayIdentity) selectedRole = "";
+    displayIdentity = identity;
+    if (
+      selected &&
+      !workPicker.matches(tasks.find((task) => task.id === selected))
+    )
+      selected = null;
+    filterStatus = selection.status;
+    $("#status-filter").value = filterStatus;
+    applyState.lastKey = null;
+    applyState(state);
+  },
+  onError: toast,
+});
 const soundscape = new OfficeSound();
 const office = new Office({
   canvas: $("#office-canvas"),
@@ -102,6 +123,8 @@ const delivery = createDeliveryTray({
   getMotion: () => settings.motion,
   t,
   getSeats: () => office.seats,
+  includeEntry: (entry) =>
+    workPicker.matches({ id: entry.taskId, source: entry.source }),
   getReply: async (entry, { signal }) => {
     if (entry.scope === "demo" && entry.taskId.startsWith("demo-"))
       return {
@@ -134,6 +157,8 @@ const controls = createCodexControls({
   t,
   getView: () => ({ tasks, selected, demo, control: state.control }),
   onSubmitted: (result, text, previousTask) => {
+    selectedRole = "";
+    void workPicker.followTask({ id: result.taskId, source: "codex" });
     selected = result.taskId;
     const started = {
       ...(previousTask || {}),
@@ -303,14 +328,11 @@ function localize() {
   text("#list-view", "listView");
   attr("#settings-open", "aria-label", "settings");
   attr("#theme-toggle", "aria-label", "themeLabel");
-  attr("#project-filter", "aria-label", "allProjects");
   attr("#status-filter", "aria-label", "allStatuses");
   attr(".toolbar", "aria-label", "allStatuses");
   attr(".office-panel", "aria-label", "officeView");
   attr("#office-canvas", "aria-label", "officeView");
   $(".brand").setAttribute("aria-label", "Workroom");
-  text("#project-filter + .sr-only", "allProjects");
-  $("#project-filter").previousElementSibling.textContent = t("allProjects");
   $("#status-filter").previousElementSibling.textContent = t("allStatuses");
   const names = {
     working: "activeOnly",
@@ -401,6 +423,7 @@ function localize() {
   text("#role-form .settings-help", "roleHelp");
   text("#role-form .primary-button", "roleCreate");
   controls.refreshText();
+  workPicker.refreshText();
   connectionGuide.refreshText();
   text("#connection-guide-open", "connectionGuide");
   attr("#connection", "aria-label", "connectionGuide");
@@ -416,9 +439,12 @@ function roleList() {
   ];
 }
 function applyState(next) {
-  const completed = delivery.observe(next.tasks || [], {
-    scope: demo ? "demo" : "live",
-  });
+  const completed = delivery.observe(
+    (next.tasks || []).filter(workPicker.matches),
+    {
+      scope: demo ? "demo" : "live",
+    },
+  );
   state = next;
   roles = roleList();
   tasks = (next.tasks || [])
@@ -440,7 +466,9 @@ function applyState(next) {
   if (!initial) {
     const changes = tasks.filter(
         (task) =>
-          previous.has(task.id) && previous.get(task.id) !== task.status,
+          workPicker.matches(task) &&
+          previous.has(task.id) &&
+          previous.get(task.id) !== task.status,
       ),
       notice =
         changes.find((task) => task.status === "error") ||
@@ -451,33 +479,7 @@ function applyState(next) {
   }
   previous = new Map(tasks.map((task) => [task.id, task.status]));
   initial = false;
-  const groups = groupWork(tasks),
-    picker = $("#project-filter");
-  const groupSignature = JSON.stringify([groups, getLocale()]);
-  if (picker.dataset.signature !== groupSignature) {
-    picker.dataset.signature = groupSignature;
-    picker.replaceChildren(new Option(t("allProjects"), ""));
-    for (const kind of ["project", "task-group"]) {
-      const members = groups.filter((group) => group.kind === kind);
-      if (!members.length) continue;
-      const optgroup = document.createElement("optgroup");
-      optgroup.label = t(
-        kind === "project" ? "projectProjects" : "projectGroups",
-      );
-      for (const group of members) {
-        const more = group.rootCount > 1 ? ` (+${group.rootCount - 1})` : "";
-        const option = new Option(
-          `${group.name}${more} · ${t("projectActiveCount", { count: group.active })}`,
-          group.key,
-        );
-        option.title = group.name;
-        optgroup.append(option);
-      }
-      picker.append(optgroup);
-    }
-    if (!groups.some((group) => group.key === project)) project = "";
-    picker.value = project;
-  }
+  workPicker.refreshTasks();
   const key = JSON.stringify(
     tasks.map((task) => [
       task.id,
@@ -497,7 +499,7 @@ function applyState(next) {
 function filteredTasks() {
   return tasks.filter(
     (task) =>
-      (!project || projectKey(task) === project) &&
+      workPicker.matches(task) &&
       (!filterStatus || task.status === filterStatus) &&
       (!selectedRole ||
         task.assignments.some((a) => a.roleId === selectedRole)),
@@ -524,13 +526,10 @@ function render() {
     seats: seats.length,
     teams: visibleRoles.length,
   });
-  $("#floor-label").textContent =
-    groupWork(tasks).find((group) => group.key === project)?.name ||
-    t("allProjects");
+  $("#floor-label").textContent = workPicker.caption();
   for (const status of ["working", "waiting", "done"]) {
     const count = tasks.filter(
-      (task) =>
-        (!project || projectKey(task) === project) && task.status === status,
+      (task) => workPicker.matches(task) && task.status === status,
     ).length;
     const number = $(`#${status}-count`);
     number.textContent =
@@ -550,7 +549,7 @@ function render() {
     const teamTasks = tasks.filter(
         (task) =>
           task.assignments.some((a) => a.roleId === role.id) &&
-          (!project || projectKey(task) === project) &&
+          workPicker.matches(task) &&
           (!filterStatus || task.status === filterStatus),
       ),
       button = document.createElement("button");
@@ -833,9 +832,10 @@ function renderHealth() {
     notice.textContent = t(!connected ? "connectionLost" : "healthUnknown");
   } else notice.hidden = true;
 }
-function connect() {
+async function connect() {
   if (publicDemo) {
     demo = true;
+    await workPicker.setScope("demo");
     $("#download-app").hidden = false;
     $("#pair-show").disabled = true;
     fetch("./demo-data.json")
@@ -853,14 +853,19 @@ function connect() {
       });
     return;
   }
+  await workPicker.setScope("live");
   source = new EventSource("/api/events");
-  source.onmessage = (event) => {
+  source.onmessage = async (event) => {
     try {
       const next = JSON.parse(event.data);
       connected = true;
       liveState = next;
       if (!demo) {
-        if (next.demo) demo = true;
+        if (next.demo) {
+          demo = true;
+          state = next;
+          await workPicker.setScope("demo");
+        }
         applyState(next);
       }
     } catch (error) {
@@ -878,22 +883,16 @@ function connect() {
     renderHealth();
   };
 }
-$("#project-filter").onchange = (event) => {
-  project = event.target.value;
-  render();
-};
 $("#project-help-open").onclick = () => $("#project-info-dialog").showModal();
 $("#status-filter").onchange = (event) => {
-  filterStatus = event.target.value;
-  render();
+  void workPicker.setStatus(event.target.value);
 };
 document.querySelectorAll("[data-filter]").forEach(
   (button) =>
     (button.onclick = () => {
-      filterStatus =
-        filterStatus === button.dataset.filter ? "" : button.dataset.filter;
-      $("#status-filter").value = filterStatus;
-      render();
+      void workPicker.setStatus(
+        filterStatus === button.dataset.filter ? "" : button.dataset.filter,
+      );
     }),
 );
 $("#zoom-in").onclick = () => office.setScale(office.scale + 0.1);
@@ -1009,18 +1008,13 @@ $("#demo-toggle").onclick = async () => {
   previous.clear();
   selected = null;
   selectedRole = "";
-  project = "";
-  filterStatus = "working";
-  $("#project-filter").value = "";
-  $("#status-filter").value = "working";
   applyState.lastKey = null;
   if (demo) {
-    demo = false;
     if (liveState) {
-      if (liveState.demo) {
-        demo = true;
-        toast(t("demoOnly"));
-      }
+      demo = Boolean(liveState.demo);
+      state = liveState;
+      await workPicker.setScope(demo ? "demo" : "live");
+      if (demo) toast(t("demoOnly"));
       applyState(liveState);
     }
     return;
@@ -1028,15 +1022,20 @@ $("#demo-toggle").onclick = async () => {
   try {
     const response = await fetch("/api/demo");
     if (!response.ok) throw Error();
+    const next = await response.json();
     demo = true;
-    applyState(await response.json());
+    state = next;
+    await workPicker.setScope("demo");
+    applyState(next);
   } catch {
     toast(t("demoFailed"));
   }
 };
 $("#demo-step").onclick = () => {
   if (!demo) return;
-  const job = state.tasks.find((task) => task.status === "working");
+  const job = state.tasks.find(
+    (task) => task.status === "working" && workPicker.matches(task),
+  );
   if (!job) {
     toast(t("noTasks"));
     return;

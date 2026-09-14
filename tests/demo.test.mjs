@@ -32,6 +32,9 @@ test("static demo publishes only explicit app assets and fictional jobs", async 
     );
     await assert.rejects(stat(path.join(output, "workroom.png")));
     await stat(path.join(output, "assets/fonts/noto-sans-jp-OFL.txt"));
+    await stat(path.join(output, "selection-model.mjs"));
+    await stat(path.join(output, "work-selection.js"));
+    await assert.rejects(stat(path.join(output, "display-selection.json")));
   } finally {
     assert.equal(path.dirname(path.resolve(output)), parent);
     await rm(output, { recursive: true, force: true });
