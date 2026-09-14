@@ -71,7 +71,7 @@ export async function buildDemo(output = path.join(root, "docs")) {
     .replaceAll('src="/', 'src="./')
     .replace(
       /<title>[\s\S]*?<\/title>/,
-      "<title>Workroom — A living pixel studio for your work</title>",
+      "<title>Workroom</title>",
     );
   html = html.replace(
     /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,

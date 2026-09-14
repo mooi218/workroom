@@ -1,4 +1,5 @@
 .office-panel,
+.focus-mode > .focus-usage,
 .side-panel section {
   border: 6px solid transparent !important;
   border-image-source: url("./assets/frame-light.svg") !important;
@@ -10,6 +11,9 @@
   background-clip: padding-box;
 }
 :root:is([data-theme="dark"], [data-theme="graphite"]) .office-panel,
+:root:is([data-theme="dark"], [data-theme="graphite"])
+  .focus-mode
+  > .focus-usage,
 :root:is([data-theme="dark"], [data-theme="graphite"]) .side-panel section {
   border-image-source: url("./assets/frame-dark.svg") !important;
   box-shadow: 5px 5px 0 #060e17 !important;

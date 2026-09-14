@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Workroom — A living pixel studio for your work</title>
+    <title>Workroom</title>
     <meta name="description" content="Turn Codex work into a living pixel studio. Explore roles, speech bubbles, a completion tray and optional office life in this interactive demo.">
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./style.css" />
@@ -24,7 +24,6 @@
           <path fill="#efede5" d="M5 5h4v4H5zm16 0h4v4h-4zM5 21h4v4H5z" /></svg
         ><span>workroom<span class="brand-dot">.</span></span></a
       >
-      <div class="header-note">YOUR LITTLE OFFICE</div>
       <div class="header-tools">
         <button
           type="button"
@@ -53,7 +52,6 @@
       <div class="workspace-controls">
         <section class="workspace-heading">
           <div>
-            <div class="eyebrow">WORK, TOGETHER</div>
             <h1>
               今日のオフィス<span class="small-sun" aria-hidden="true">✳</span>
             </h1>
@@ -123,7 +121,6 @@
             height="64"
             aria-hidden="true"
           ></canvas>
-          <span id="clock-greeting" class="clock-greeting"></span>
         </div>
       </div>
       <div id="notice" class="notice" hidden></div>
@@ -199,8 +196,7 @@
             <p id="usage-message" class="muted" role="status"></p>
           </section>
           <section class="overview">
-            <div class="section-kicker">OFFICE PULSE</div>
-            <h2>いま、ここで</h2>
+            <h2>作業状況</h2>
             <div class="stats">
               <button data-filter="working">
                 <canvas
@@ -270,8 +266,7 @@
         </aside>
       </div>
       <footer class="page-footer">
-        <span>ひとつひとつの仕事に、居場所を。</span
-        ><span id="credit-footnote">表示の追加AI利用なし</span>
+        <span id="credit-footnote">表示の追加AI利用なし</span>
       </footer>
     </main>
     <dialog id="command-dialog">

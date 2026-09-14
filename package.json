@@ -1,6 +1,6 @@
 {
   "name": "workroom-office",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "private": true,
   "description": "A living pixel studio for Codex work, with live roles and an optional ChatGPT Work observer.",
   "type": "module",

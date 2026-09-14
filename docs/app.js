@@ -116,6 +116,7 @@ const focusView = createFocusView({
   panel: $(".office-panel"),
   viewport: $("#office-viewport"),
   button: $("#focus-toggle"),
+  usagePanel: publicDemo ? null : $("#codex-usage"),
   t,
 });
 const delivery = createDeliveryTray({
@@ -320,7 +321,6 @@ function localize() {
   text("#project-info-title", "projectHelpTitle");
   text("#project-info-text", "projectHelp");
   text("#demo-step", "demoStep");
-  text("#clock-greeting", "clockGreeting");
   delivery.refreshText();
   focusView.refreshText();
   attr("#project-info-dialog .icon-button", "aria-label", "close");
@@ -348,7 +348,6 @@ function localize() {
   attr("#zoom-in", "aria-label", "zoomIn");
   attr("#zoom-out", "aria-label", "zoomOut");
   text("#zoom-fit", "fit");
-  text(".overview .section-kicker", "officePulse");
   text(".overview h2", "nowHere");
   text(".teams-section h2", "teams");
   text("#add-role", "addRole");
@@ -364,7 +363,6 @@ function localize() {
     const dot = legend.querySelector("i");
     legend.replaceChildren(dot, document.createTextNode(t(dot.className)));
   }
-  text(".page-footer>span:first-child", "footerText");
   text("#active-help", "activeHelp");
   text("#settings-dialog h2", "settingsTitle");
   attr("#settings-dialog .icon-button", "aria-label", "close");
@@ -1093,7 +1091,6 @@ function updateClock() {
     .map((n) => String(n).padStart(2, "0"))
     .join(":");
   $("#clock-time").dateTime = now.toISOString();
-  $("#clock-greeting").textContent = t("clockGreeting");
 }
 updateClock();
 setInterval(updateClock, 30000);

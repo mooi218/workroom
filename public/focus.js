@@ -3,7 +3,13 @@ const FALLBACK = {
   focusExit: "Exit full screen",
 };
 
-export function createFocusView({ panel, viewport, button, t }) {
+export function createFocusView({
+  panel,
+  viewport,
+  button,
+  usagePanel = null,
+  t,
+}) {
   const doc = panel.ownerDocument,
     win = doc.defaultView;
   let active = false,
@@ -12,6 +18,7 @@ export function createFocusView({ panel, viewport, button, t }) {
     revision = 0,
     destroyed = false;
   const placeholder = doc.createComment("workroom-focus-button");
+  const usagePlaceholder = doc.createComment("workroom-focus-usage");
   const icon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
   icon.setAttribute("viewBox", "0 0 24 24");
   icon.setAttribute("width", "18");
@@ -70,6 +77,8 @@ export function createFocusView({ panel, viewport, button, t }) {
     delete panel.dataset.focus;
     button.classList.remove("focus-exit");
     if (placeholder.parentNode) placeholder.replaceWith(button);
+    if (usagePlaceholder.parentNode) usagePlaceholder.replaceWith(usagePanel);
+    usagePanel?.classList.remove("focus-usage");
     if (previous) {
       doc.body.style.overflow = previous.overflow;
       doc.body.classList.toggle("workroom-focus-active", previous.bodyClass);
@@ -116,6 +125,11 @@ export function createFocusView({ panel, viewport, button, t }) {
     active = true;
     button.before(placeholder);
     panel.append(button);
+    if (usagePanel) {
+      usagePanel.before(usagePlaceholder);
+      panel.append(usagePanel);
+      usagePanel.classList.add("focus-usage");
+    }
     panel.classList.add("focus-mode");
     panel.dataset.focus = "fallback";
     button.classList.add("focus-exit");

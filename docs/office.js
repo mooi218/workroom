@@ -994,20 +994,11 @@ export class Office {
     this.text(
       "WORKROOM",
       x + w / 2,
-      y + (compact ? 26 : 31),
+      y + (compact ? 26 : 41),
       compact ? 20 : 25,
       "#17344b",
       "750",
     );
-    if (!compact)
-      this.text(
-        "GOOD PEOPLE · GOOD WORK",
-        x + w / 2,
-        y + 51,
-        14,
-        "#243e4d",
-        "650",
-      );
     c.restore();
   }
   officeFrame(top, height) {
@@ -2208,17 +2199,6 @@ export class Office {
       }
     const bottom = this.height - 28;
     this.rect(25, bottom + 18, this.width - 50, 2, "#aab09a");
-    c.save();
-    c.textAlign = "center";
-    this.text(
-      "WELCOME TO YOUR OFFICE",
-      this.width / 2,
-      bottom + 13,
-      14,
-      this.dark ? "#e3e9f0" : "#253e57",
-      "600",
-    );
-    c.restore();
     this.plant(48, bottom + 10, 0.5);
     this.plant(this.width - 48, bottom + 10, 0.5);
   }

@@ -39,7 +39,7 @@ Use this mode to explore the office, test sounds, or share screenshots. It does 
 ## Make the work easy to follow
 
 - **See tasks at a glance.** A compact top bar sits above the office map, with task and team details in panels on the right. Active tasks appear by default, with a title bubble and status at each desk. A task list is also available.
-- **Focus on the office.** Open just the office map in fullscreen. Press **Escape** to return to the normal view.
+- **Focus on the office.** Open the office map in fullscreen, with your Codex allowance at the bottom left (Pro: 7 days; Plus: 5 hours and 7 days). Press **Escape** to return to the normal view.
 - **Collect finished responses.** The delivery tray highlights newly completed responses and links back to their tasks. Older completions are not flagged as new deliveries. Each delivery marks the latest response finishing; the overall project may still be in progress.
 - **Organize by role.** Start with engineering, design, public relations, sales, editorial, research, planning, and operations. Add custom roles and keywords, or assign a task manually. Rooms and desks expand with the work; there is no fixed four-seat limit.
 - **Follow activity across departments.** One task can appear in several departments when its current turn contains several kinds of recorded activity. Task and seat counts are displayed separately.

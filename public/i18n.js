@@ -43,7 +43,7 @@ export const LANGUAGES = [
 ];
 export const TRANSLATIONS = {
   ja: {
-    appTitle: "Workroom — 仕事が見える、小さなオフィス",
+    appTitle: "Workroom",
     officeHeading: "今日のオフィス",
     creditLabel: "表示・自動更新のAIクレジット",
     creditHelp:
@@ -69,8 +69,7 @@ export const TRANSLATIONS = {
     zoomOut: "縮小",
     fit: "全体",
     seatSummary: "{tasks} 件の仕事 · {seats} 席 · {teams} チーム",
-    officePulse: "オフィスのいま",
-    nowHere: "いま、ここで",
+    nowHere: "作業状況",
     teams: "チーム",
     addRole: "役割を追加",
     chooseDesk: "席を選んでみよう",
@@ -144,7 +143,6 @@ export const TRANSLATIONS = {
     contentNotTranslated:
       "仕事の内容・プロジェクト名・追加した役割名は元の言語で表示します。",
     waitingForWork: "仕事が始まるのを待っています",
-    footerText: "ひとつひとつの仕事に、居場所を。",
     cloudDisconnected: "拡張未接続",
     cloudConnected: "ブラウザーから受信中",
     cloudStale: "観測が途切れています",
@@ -196,10 +194,9 @@ export const TRANSLATIONS = {
     focusEnter: "社員の様子を全画面で表示",
     focusExit: "全画面を終了",
     demoStep: "デモの仕事を完了させる",
-    clockGreeting: "今日も、いい仕事を。",
   },
   en: {
-    appTitle: "Workroom — A little office for your work",
+    appTitle: "Workroom",
     officeHeading: "Today's office",
     creditLabel: "AI credits for display and sync",
     creditHelp:
@@ -225,8 +222,7 @@ export const TRANSLATIONS = {
     zoomOut: "Zoom out",
     fit: "Fit",
     seatSummary: "{tasks} jobs · {seats} seats · {teams} teams",
-    officePulse: "Office pulse",
-    nowHere: "Here, right now",
+    nowHere: "Task status",
     teams: "Teams",
     addRole: "Add a role",
     chooseDesk: "Choose a desk",
@@ -301,7 +297,6 @@ export const TRANSLATIONS = {
     contentNotTranslated:
       "Job content, project names, and custom role names stay in their original language.",
     waitingForWork: "Waiting for work to begin",
-    footerText: "A place for every piece of work.",
     cloudDisconnected: "Extension not connected",
     cloudConnected: "Receiving from browser",
     cloudStale: "Observation interrupted",
@@ -352,10 +347,9 @@ export const TRANSLATIONS = {
     focusEnter: "Show the office in full screen",
     focusExit: "Exit full screen",
     demoStep: "Finish a sample job",
-    clockGreeting: "Make good work today.",
   },
   zh: {
-    appTitle: "Workroom — 看得见工作的小办公室",
+    appTitle: "Workroom",
     officeHeading: "今天的办公室",
     creditLabel: "显示与自动同步消耗的 AI 额度",
     creditHelp: "本应用不调用 AI。Codex 和 Work 任务本身仍按正常方式消耗额度。",
@@ -380,8 +374,7 @@ export const TRANSLATIONS = {
     zoomOut: "缩小",
     fit: "适应窗口",
     seatSummary: "{tasks} 项任务 · {seats} 个座位 · {teams} 个团队",
-    officePulse: "办公室动态",
-    nowHere: "此时此刻",
+    nowHere: "工作状态",
     teams: "团队",
     addRole: "添加角色",
     chooseDesk: "选一个座位吧",
@@ -449,7 +442,6 @@ export const TRANSLATIONS = {
     themeSystem: "跟随设备",
     contentNotTranslated: "任务内容、项目名称和自定义角色名称保留原语言。",
     waitingForWork: "等待任务开始",
-    footerText: "让每一项工作，都有自己的位置。",
     cloudDisconnected: "扩展未连接",
     cloudConnected: "正在接收浏览器状态",
     cloudStale: "观测已中断",
@@ -499,10 +491,9 @@ export const TRANSLATIONS = {
     focusEnter: "全屏显示办公室",
     focusExit: "退出全屏",
     demoStep: "完成一个示例任务",
-    clockGreeting: "今天也做好工作。",
   },
   es: {
-    appTitle: "Workroom — Una pequeña oficina para tu trabajo",
+    appTitle: "Workroom",
     officeHeading: "La oficina de hoy",
     creditLabel: "Créditos de IA para mostrar y sincronizar",
     creditHelp:
@@ -528,8 +519,7 @@ export const TRANSLATIONS = {
     zoomOut: "Alejar",
     fit: "Ajustar",
     seatSummary: "{tasks} tareas · {seats} puestos · {teams} equipos",
-    officePulse: "Pulso de la oficina",
-    nowHere: "Aquí y ahora",
+    nowHere: "Estado del trabajo",
     teams: "Equipos",
     addRole: "Añadir un rol",
     chooseDesk: "Elige un puesto",
@@ -607,7 +597,6 @@ export const TRANSLATIONS = {
     contentNotTranslated:
       "El contenido de las tareas, los nombres de proyectos y los roles personalizados conservan su idioma original.",
     waitingForWork: "Esperando a que empiece el trabajo",
-    footerText: "Un lugar para cada tarea.",
     cloudDisconnected: "Extensión sin conectar",
     cloudConnected: "Recibiendo del navegador",
     cloudStale: "Observación interrumpida",
@@ -659,10 +648,9 @@ export const TRANSLATIONS = {
     focusEnter: "Mostrar la oficina a pantalla completa",
     focusExit: "Salir de pantalla completa",
     demoStep: "Completar una tarea de ejemplo",
-    clockGreeting: "Hoy, hagamos un buen trabajo.",
   },
   pt: {
-    appTitle: "Workroom — Um pequeno escritório para seu trabalho",
+    appTitle: "Workroom",
     officeHeading: "O escritório de hoje",
     creditLabel: "Créditos de IA para exibir e sincronizar",
     creditHelp:
@@ -688,8 +676,7 @@ export const TRANSLATIONS = {
     zoomOut: "Reduzir",
     fit: "Ajustar",
     seatSummary: "{tasks} tarefas · {seats} lugares · {teams} equipes",
-    officePulse: "Movimento do escritório",
-    nowHere: "Aqui e agora",
+    nowHere: "Status do trabalho",
     teams: "Equipes",
     addRole: "Adicionar função",
     chooseDesk: "Escolha uma mesa",
@@ -767,7 +754,6 @@ export const TRANSLATIONS = {
     contentNotTranslated:
       "O conteúdo das tarefas, os nomes dos projetos e as funções personalizadas permanecem no idioma original.",
     waitingForWork: "Aguardando o início do trabalho",
-    footerText: "Um lugar para cada tarefa.",
     cloudDisconnected: "Extensão desconectada",
     cloudConnected: "Recebendo do navegador",
     cloudStale: "Observação interrompida",
@@ -819,10 +805,9 @@ export const TRANSLATIONS = {
     focusEnter: "Mostrar o escritório em tela cheia",
     focusExit: "Sair da tela cheia",
     demoStep: "Concluir uma tarefa de exemplo",
-    clockGreeting: "Vamos fazer um bom trabalho.",
   },
   fr: {
-    appTitle: "Workroom — Un petit bureau pour votre travail",
+    appTitle: "Workroom",
     officeHeading: "Le bureau du jour",
     creditLabel: "Crédits IA pour l’affichage et la synchronisation",
     creditHelp:
@@ -848,8 +833,7 @@ export const TRANSLATIONS = {
     zoomOut: "Réduire",
     fit: "Ajuster",
     seatSummary: "{tasks} tâches · {seats} places · {teams} équipes",
-    officePulse: "La vie du bureau",
-    nowHere: "Ici et maintenant",
+    nowHere: "État des tâches",
     teams: "Équipes",
     addRole: "Ajouter un rôle",
     chooseDesk: "Choisissez une place",
@@ -928,7 +912,6 @@ export const TRANSLATIONS = {
     contentNotTranslated:
       "Le contenu des tâches, les noms de projets et les rôles personnalisés restent dans leur langue d’origine.",
     waitingForWork: "En attendant le début du travail",
-    footerText: "Une place pour chaque tâche.",
     cloudDisconnected: "Extension déconnectée",
     cloudConnected: "Réception depuis le navigateur",
     cloudStale: "Observation interrompue",
@@ -980,10 +963,9 @@ export const TRANSLATIONS = {
     focusEnter: "Afficher le bureau en plein écran",
     focusExit: "Quitter le plein écran",
     demoStep: "Terminer une tâche fictive",
-    clockGreeting: "Du beau travail, aujourd’hui.",
   },
   hi: {
-    appTitle: "Workroom — आपके काम का छोटा-सा दफ़्तर",
+    appTitle: "Workroom",
     officeHeading: "आज का दफ़्तर",
     creditLabel: "दिखाने और सिंक करने के AI क्रेडिट",
     creditHelp:
@@ -1009,8 +991,7 @@ export const TRANSLATIONS = {
     zoomOut: "छोटा करें",
     fit: "पूरा दिखाएँ",
     seatSummary: "{tasks} काम · {seats} सीटें · {teams} टीमें",
-    officePulse: "दफ़्तर की हलचल",
-    nowHere: "अभी, यहाँ",
+    nowHere: "काम की स्थिति",
     teams: "टीमें",
     addRole: "भूमिका जोड़ें",
     chooseDesk: "एक डेस्क चुनें",
@@ -1086,7 +1067,6 @@ export const TRANSLATIONS = {
     contentNotTranslated:
       "काम की सामग्री, प्रोजेक्ट के नाम और आपकी बनाई भूमिकाओं के नाम मूल भाषा में ही दिखते हैं।",
     waitingForWork: "काम शुरू होने का इंतज़ार है",
-    footerText: "हर काम के लिए एक जगह।",
     cloudDisconnected: "एक्सटेंशन जुड़ा नहीं है",
     cloudConnected: "ब्राउज़र से स्थिति मिल रही है",
     cloudStale: "स्थिति मिलना बंद हो गया",
@@ -1138,10 +1118,9 @@ export const TRANSLATIONS = {
     focusEnter: "दफ़्तर पूरे स्क्रीन पर दिखाएँ",
     focusExit: "पूरे स्क्रीन से बाहर जाएँ",
     demoStep: "एक नमूना काम पूरा करें",
-    clockGreeting: "आज भी अच्छा काम करें।",
   },
   ar: {
-    appTitle: "Workroom — مكتب صغير لأعمالك",
+    appTitle: "Workroom",
     officeHeading: "مكتب اليوم",
     creditLabel: "رصيد الذكاء الاصطناعي للعرض والمزامنة",
     creditHelp:
@@ -1167,8 +1146,7 @@ export const TRANSLATIONS = {
     zoomOut: "تصغير",
     fit: "عرض الكل",
     seatSummary: "{tasks} مهام · {seats} مقاعد · {teams} فرق",
-    officePulse: "نبض المكتب",
-    nowHere: "هنا والآن",
+    nowHere: "حالة العمل",
     teams: "الفرق",
     addRole: "إضافة دور",
     chooseDesk: "اختر مقعدًا",
@@ -1239,7 +1217,6 @@ export const TRANSLATIONS = {
     contentNotTranslated:
       "يظل محتوى المهام وأسماء المشاريع والأدوار المخصصة بلغتها الأصلية.",
     waitingForWork: "بانتظار بدء العمل",
-    footerText: "مكان لكل مهمة.",
     cloudDisconnected: "الإضافة غير متصلة",
     cloudConnected: "جارٍ الاستقبال من المتصفح",
     cloudStale: "انقطع الرصد",
@@ -1290,7 +1267,6 @@ export const TRANSLATIONS = {
     focusEnter: "عرض المكتب بملء الشاشة",
     focusExit: "الخروج من ملء الشاشة",
     demoStep: "إنهاء مهمة نموذجية",
-    clockGreeting: "لننجز عملًا جيدًا اليوم.",
   },
 };
 
